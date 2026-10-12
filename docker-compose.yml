@@ -1,0 +1,42 @@
+# App + n8n. LLM points at vLLM on an AMD MI300X (set LLM_BASE_URL in .env); without it the app runs on the mock.
+services:
+  app:
+    build: .
+    ports: ["8080:8080"]
+    env_file: [{path: .env, required: false}]
+    environment:
+      LLM_BACKEND: ${LLM_BACKEND:-mock}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://vllm:8000/v1}
+      LLM_MODEL: ${LLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8080/healthz')"]
+      interval: 10s
+  n8n:
+    image: n8nio/n8n:latest
+    ports: ["5678:5678"]
+    environment:
+      LEADFLOW_URL: http://app:8080
+      N8N_SECURE_COOKIE: "false"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n:/workflows:ro
+    depends_on: [app]
+
+  # Optional: run vLLM on the same AMD GPU host (MI300X, ROCm). `docker compose --profile amd up`
+  vllm:
+    profiles: [amd]
+    image: rocm/vllm:latest
+    command: ["vllm", "serve", "${LLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}", "--host", "0.0.0.0", "--port", "8000",
+              "--max-model-len", "8192"]
+    devices: ["/dev/kfd", "/dev/dri"]
+    group_add: [video]
+    ipc: host
+    shm_size: 16g
+    security_opt: [seccomp=unconfined]
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes: ["hf_cache:/root/.cache/huggingface"]
+    ports: ["8000:8000"]
+volumes:
+  n8n_data:
+  hf_cache:

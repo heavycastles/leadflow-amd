@@ -1,0 +1,26 @@
+{
+  "name": "Telegram -> LeadFlow AI (AMD) -> reply + notify owner",
+  "nodes": [
+    {"parameters": {"updates": ["message"]}, "name": "Telegram Trigger", "type": "n8n-nodes-base.telegramTrigger",
+     "typeVersion": 1.1, "position": [0, 0], "credentials": {"telegramApi": {"id": "", "name": "Shop bot"}}},
+    {"parameters": {"method": "POST", "url": "={{$env.LEADFLOW_URL}}/leads", "sendBody": true, "specifyBody": "json",
+      "jsonBody": "={{ JSON.stringify({name: $json.message.from.first_name || 'Telegram user', source: 'telegram', phone: $json.message.contact ? $json.message.contact.phone_number : null, email: 'tg' + $json.message.from.id + '@telegram.local', message: $json.message.text}) }}"},
+     "name": "LeadFlow AI analyze", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [240, 0]},
+    {"parameters": {"chatId": "={{$('Telegram Trigger').item.json.message.chat.id}}",
+      "text": "={{$json.lead.agent.analysis.reply}}"},
+     "name": "Reply to customer", "type": "n8n-nodes-base.telegram", "typeVersion": 1.2, "position": [480, -100],
+     "credentials": {"telegramApi": {"id": "", "name": "Shop bot"}}},
+    {"parameters": {"conditions": {"number": [{"value1": "={{$json.lead.agent.hybrid_score}}", "operation": "largerEqual", "value2": 70}]}},
+     "name": "Hot lead?", "type": "n8n-nodes-base.if", "typeVersion": 1, "position": [480, 100]},
+    {"parameters": {"chatId": "={{$env.OWNER_CHAT_ID}}",
+      "text": "=🔥 Hot lead {{$json.lead.name}} ({{$json.lead.agent.hybrid_score}}): {{$json.lead.agent.analysis.intent}} -> {{$json.lead.agent.analysis.next_action}}\n{{$json.lead.message}}"},
+     "name": "Notify owner", "type": "n8n-nodes-base.telegram", "typeVersion": 1.2, "position": [720, 100],
+     "credentials": {"telegramApi": {"id": "", "name": "Shop bot"}}}
+  ],
+  "connections": {
+    "Telegram Trigger": {"main": [[{"node": "LeadFlow AI analyze", "type": "main", "index": 0}]]},
+    "LeadFlow AI analyze": {"main": [[{"node": "Reply to customer", "type": "main", "index": 0}, {"node": "Hot lead?", "type": "main", "index": 0}]]},
+    "Hot lead?": {"main": [[{"node": "Notify owner", "type": "main", "index": 0}], []]}
+  },
+  "settings": {}
+}

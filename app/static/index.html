@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>LeadFlow AI on AMD</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{font-family:system-ui,sans-serif;margin:0;background:#0f1115;color:#e8e8e8}
+header{background:#ed1c24;padding:14px 24px;font-weight:700;font-size:20px}
+main{display:grid;grid-template-columns:340px 1fr;gap:20px;padding:20px}
+.card{background:#1a1d24;border-radius:10px;padding:16px}
+input,select,textarea,button{width:100%;box-sizing:border-box;margin:4px 0 10px;padding:8px;border-radius:6px;border:1px solid #333;background:#11141a;color:#eee}
+button{background:#ed1c24;border:0;font-weight:700;cursor:pointer}
+table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #2a2e37;vertical-align:top;font-size:14px;text-align:left}
+.score{font-size:22px;font-weight:700}.tag{display:inline-block;background:#2a2e37;border-radius:4px;padding:1px 6px;margin:1px;font-size:12px}
+.muted{color:#999;font-size:12px}#metrics{font-size:13px}
+</style></head><body>
+<header>LeadFlow AI &mdash; commerce lead &amp; order agent <span class="muted" id="hw"></span></header>
+<main>
+<section>
+ <div class="card"><h3>New message</h3>
+  <input id="name" placeholder="Name" value="Dilnoza">
+  <select id="source"><option>telegram</option><option>whatsapp</option><option>web</option><option>email</option><option>phone</option><option>referral</option></select>
+  <input id="phone" placeholder="Phone" value="+998 90 123 45 67">
+  <input id="email" placeholder="Email">
+  <textarea id="message" rows="4">Salom! 3 dona kurtka kerak, bugun olaman. Narxi qancha? Budjet 1500000 so'm</textarea>
+  <button onclick="send()">Analyze with agent</button>
+  <button onclick="demo()" style="background:#444">Load demo leads</button>
+ </div>
+ <div class="card" style="margin-top:20px"><h3>AMD inference</h3><div id="metrics"></div></div>
+</section>
+<section class="card"><h3>Ranked leads</h3>
+ <table><thead><tr><th>Score</th><th>Lead</th><th>Agent</th><th>Reply draft</th></tr></thead><tbody id="rows"></tbody></table>
+ <h3>Order drafts</h3><div id="orders" class="muted">none</div>
+</section></main>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function send(body){
+ body=body||{name:$('name').value,source:$('source').value,phone:$('phone').value||null,email:$('email').value||null,message:$('message').value};
+ const r=await fetch('/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ if(!r.ok) alert(await r.text()); await refresh();
+}
+async function demo(){
+ for(const l of [
+  {name:'Ivan',source:'whatsapp',phone:'+998901112233',message:'Хочу заказать 2 шт кроссовки 42 размера, срочно, бюджет 900000 сум'},
+  {name:'Sarah',source:'web',email:'sarah@example.com',message:'What is the price for 50 units hoodies with logo?'},
+  {name:'Bot',source:'web',email:'win@spam.io',message:'Crypto bonus casino click here'},
+  {name:'Aziz',source:'telegram',phone:'+998935556677',message:'Kurtka brak keldi, pulni qaytaring'}]) await send(l);
+}
+async function refresh(){
+ const d=await (await fetch('/leads')).json();
+ $('rows').innerHTML=d.leads.map(l=>{const a=l.agent;const x=a?a.analysis:{};
+  return `<tr><td class="score">${a?a.hybrid_score:l.score}</td>
+  <td><b>${esc(l.name)}</b> <span class="tag">${esc(l.source)}</span><br><span class="muted">${esc(l.message)}</span></td>
+  <td>${a?`<span class="tag">${esc(x.intent)}</span><span class="tag">${esc(x.language)}</span><span class="tag">${esc(x.next_action)}</span><br>
+   ${x.products.map(p=>`<span class="tag">${esc(p.qty??'?')}× ${esc(p.name)}</span>`).join('')}
+   <div class="muted">${a.reasons.map(esc).join(' · ')}</div>
+   <div class="muted">${esc(a.llm.model)} @ ${esc(a.llm.backend)} · ${a.llm.latency_ms} ms · ${a.llm.tokens_per_sec} tok/s${a.llm.fallback_reason?' · FALLBACK':''}</div>`:'—'}</td>
+  <td>${a?esc(x.reply):''}</td></tr>`}).join('');
+ const o=await (await fetch('/orders')).json();
+ $('orders').innerHTML=o.count?o.orders.map(x=>`#${x.id} lead ${x.lead_id}: ${x.items.map(i=>esc((i.qty??'?')+'× '+i.name)).join(', ')} ${x.budget?'· '+x.budget+' '+esc(x.currency):''}`).join('<br>'):'none';
+ const m=await (await fetch('/metrics')).json();
+ $('hw').textContent='· '+m.llm.model+' on '+(m.llm.backend==='mock'?'offline mock':m.llm.hardware);
+ $('metrics').innerHTML=`backend: <b>${esc(m.llm.backend)}</b><br>model: ${esc(m.llm.model)}<br>hardware: ${esc(m.llm.hardware)}<br>calls: ${m.calls} · fallbacks: ${m.fallbacks}<br>avg latency: ${m.avg_latency_ms} ms<br>avg throughput: ${m.avg_tokens_per_sec} tok/s`;
+}
+refresh();
+</script></body></html>
