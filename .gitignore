@@ -3,3 +3,6 @@ __pycache__/
 .env
 .pytest_cache/
 .ruff_cache/
+
+# video build scratch
+docs/video-work/

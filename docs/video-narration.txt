@@ -1,0 +1,14 @@
+[0:00–0:15 Hook]
+Small shops in Uzbekistan sell through Telegram — in three languages. Every slow reply is a lost sale. This is LeadFlow AI, a multilingual commerce lead and order agent, designed to run on an AMD Instinct MI300X.
+
+[0:15–0:40 Problem]
+Orders, price questions, complaints and spam all land in one inbox — Russian, Uzbek and English mixed together. Owners drown in messages and lose hot buyers while answering price questions.
+
+[0:40–1:30 Live demo]
+Watch the live analyzer. We send an Uzbek message: Salom! 3 dona kurtka kerak, bugun olaman. Narxi qancha? LeadFlow detects intent order, language Uzbek, product three jackets, urgency high, drafts a reply in Uzbek, and creates an order draft automatically. Then we load demo leads: a Russian order jumps to the top with score one hundred, an English quote is next, a complaint is escalated, and spam drops to zero. Every score point has a human-readable reason — no black box.
+
+[1:30–2:05 AMD]
+Every analysis is meant to run on vLLM on ROCm on an AMD Instinct MI300X with one hundred ninety-two gigabytes of HBM. On AMD Developer Cloud you deploy with deploy slash vllm-rocm.sh, then run python dash m scripts.benchmark with concurrency eight. This draft marks benchmarks on MI300X as pending — we will fill in requests per second, tokens per second and latency after the cloud run. One GPU can serve hundreds of shops.
+
+[2:05–2:30 Close]
+Architecture: Telegram, WhatsApp or web through n8n into FastAPI, then the Commerce Agent calling vLLM on MI300X, with a dashboard for ranked leads, order drafts and metrics. LeadFlow AI: never miss a buyer. Open source, MIT licensed. Link in the description.
