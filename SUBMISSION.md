@@ -30,4 +30,9 @@ AI Agents, LLM, E-commerce
 
 **Track:** Reinvent Commerce
 
-**Links (TODO):** GitHub repo · demo app URL · video · slides PDF · cover image
+**Links:**
+- GitHub repo: TODO — `heavycastles/leadflow-amd` (use `scripts/publish_github.sh` when `gh` is logged in)
+- Demo app URL: TODO
+- Video: TODO (script in `docs/video-script.md`)
+- Slides PDF: `docs/slides.pdf` (local; upload on submit)
+- Cover image: `docs/cover.png` (local; upload on submit)
