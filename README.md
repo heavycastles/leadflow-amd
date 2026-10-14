@@ -85,6 +85,24 @@ docker compose --profile amd up --build      # also starts vLLM on the local AMD
 ```
 In n8n: import `n8n/telegram-leadflow.json`, add Telegram credentials, set `OWNER_CHAT_ID`, activate.
 
+## Deploy demo (Render)
+
+One-click free-tier demo (mock LLM — boots without a GPU). Config: `render.yaml`.
+
+1. Push this repo to GitHub as a **public** repo (e.g. `heavycastles/leadflow-amd`).
+2. Open [Render Blueprint](https://dashboard.render.com/select-repo?type=blueprint), connect the repo, Apply.
+3. Render builds the `Dockerfile`, sets `LLM_BACKEND=mock`, health-checks `/healthz` on port 8080.
+4. Demo URL → paste into `SUBMISSION.md` Links.
+
+Local smoke check of the same image:
+```bash
+docker build -t leadflow-amd .
+docker run --rm -p 8080:8080 -e LLM_BACKEND=mock leadflow-amd
+# curl http://localhost:8080/healthz
+```
+
+For the real AMD path (MI300X + vLLM), use the Setup §2 steps above after claiming Developer Cloud credits — do not point the free Render service at a private GPU endpoint unless you firewall it.
+
 ## API
 | Method | Path | |
 |---|---|---|

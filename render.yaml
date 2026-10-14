@@ -1,0 +1,20 @@
+# Render Blueprint — free-tier one-click demo (mock LLM, no GPU required).
+# Deploy: https://dashboard.render.com/select-repo?type=blueprint
+# Or: New → Blueprint → connect heavycastles/leadflow-amd → Apply.
+services:
+  - type: web
+    name: leadflow-amd
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: oregon
+    healthCheckPath: /healthz
+    envVars:
+      - key: LLM_BACKEND
+        value: mock
+      - key: LLM_FALLBACK
+        value: "1"
+      - key: LLM_HARDWARE
+        value: "mock (Render free tier; MI300X TBD)"
+      # Render injects PORT; serve.py reads it (default 8080).

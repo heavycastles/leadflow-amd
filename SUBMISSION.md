@@ -36,3 +36,11 @@ AI Agents, LLM, E-commerce
 - Video: latest draft `docs/demo-v3.mp4` (also `demo-v2.mp4` / `demo-draft.mp4`; still needs MI300X benchmark segment and user review; script in `docs/video-script.md`, narration in `docs/video-narration.txt`)
 - Slides PDF: `docs/slides.pdf` (local; upload on submit)
 - Cover image: `docs/cover.png` (local; upload on submit)
+
+**Remaining before submit (user):**
+1. Connect Discord on lablab.ai for AMD ACT III.
+2. Sign in at [login.amd.com](https://login.amd.com), then claim $100 AMD Developer Cloud credits at [developer.amd.com/ai-developer-program](https://developer.amd.com/ai-developer-program/) (needed for MI300X benchmarks).
+3. Approve creating/publishing public GitHub repo `heavycastles/leadflow-amd` (local pack is ready; push when approved).
+4. Approve demo deploy via Render Blueprint (`render.yaml` → free tier, mock LLM) and paste the live URL into Links above.
+5. Review `docs/demo-v3.mp4` (upload to YouTube/Drive for the form if required).
+6. Submit on lablab.ai by **Oct 18, 2026 18:00 MSK**.

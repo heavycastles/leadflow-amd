@@ -1,0 +1,30 @@
+.git
+.venv
+__pycache__
+**/__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.env
+.env.*
+!.env.example
+
+# Keep demo videos out of the image (multi-MB); slides/cover stay small if ever COPY'd
+docs/**/*.mp4
+docs/video-work/
+docs/v2-frames/
+docs/draft-frames/
+docs/demo-*.mp4
+
+# Dev / local-only
+.cursor
+*.md
+!README.md
+n8n/
+scripts/
+tests/
+slides.md
+requirements-dev.txt
+ruff.toml
+docker-compose.yml
+render.yaml
