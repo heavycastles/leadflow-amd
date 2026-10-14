@@ -85,6 +85,12 @@ docker compose --profile amd up --build      # also starts vLLM on the local AMD
 ```
 In n8n: import `n8n/telegram-leadflow.json`, add Telegram credentials, set `OWNER_CHAT_ID`, activate.
 
+## Preflight (before user ship)
+
+```bash
+./scripts/preflight_submit.sh   # tests, LICENSE, render.yaml, demo video, prints USER checklist
+```
+
 ## Deploy demo (Render)
 
 One-click free-tier demo (mock LLM — boots without a GPU). Config: `render.yaml`.
