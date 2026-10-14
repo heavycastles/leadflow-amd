@@ -51,6 +51,8 @@ Benchmark results on MI300X: **TODO — fill in after running on AMD Developer C
 |---|---|---|---|---|---|
 | Qwen2.5-7B-Instruct | 8 | TBD | TBD | TBD | TBD |
 
+Local **mock** backend sanity run (not GPU): see [`docs/benchmarks-mock.md`](docs/benchmarks-mock.md) — intent accuracy only; latency/tok/s are not meaningful without MI300X.
+
 ## Setup
 
 ### 1. Local (no GPU, mock LLM)

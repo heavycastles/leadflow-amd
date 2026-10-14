@@ -18,6 +18,19 @@ if ! gh auth status >/dev/null 2>&1; then
   exit 1
 fi
 
+# Local pack sanity (no push yet)
+if [[ ! -f .github/workflows/ci.yml ]]; then
+  echo "missing .github/workflows/ci.yml — add CI before publishing" >&2
+  exit 1
+fi
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "working tree dirty — commit or stash before publishing" >&2
+  exit 1
+fi
+if [[ -x ./scripts/preflight_submit.sh ]]; then
+  ./scripts/preflight_submit.sh || { echo "preflight failed — fix before publishing" >&2; exit 1; }
+fi
+
 LOGIN=$(gh api user -q .login)
 if [[ "$LOGIN" != "$OWNER" ]]; then
   echo "gh logged in as '${LOGIN}', expected '${OWNER}'" >&2

@@ -49,7 +49,10 @@ fi
 [[ -f LICENSE ]] && ok "LICENSE present" || bad "LICENSE missing"
 [[ -f render.yaml ]] && ok "render.yaml present" || bad "render.yaml missing"
 [[ -f Dockerfile ]] && ok "Dockerfile present" || bad "Dockerfile missing"
+[[ -f docker-compose.yml ]] && ok "docker-compose.yml present" || bad "docker-compose.yml missing"
 [[ -f serve.py ]] && ok "serve.py present" || bad "serve.py missing"
+[[ -f .github/workflows/ci.yml ]] && ok "CI workflow present" || bad ".github/workflows/ci.yml missing"
+[[ -f docs/benchmarks-mock.md ]] && ok "docs/benchmarks-mock.md present" || bad "docs/benchmarks-mock.md missing"
 
 # 4) Demo video
 if [[ -f docs/demo-v3.mp4 ]]; then

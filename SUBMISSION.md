@@ -36,6 +36,8 @@ AI Agents, LLM, E-commerce
 - Video: latest draft `docs/demo-v3.mp4` (also `demo-v2.mp4` / `demo-draft.mp4`; still needs MI300X benchmark segment and user review; script in `docs/video-script.md`, narration in `docs/video-narration.txt`)
 - Slides PDF: `docs/slides.pdf` (local; upload on submit)
 - Cover image: `docs/cover.png` (local; upload on submit)
+- Local CI: `.github/workflows/ci.yml` (pytest on push/PR)
+- Mock benchmark note: `docs/benchmarks-mock.md` (NOT MI300X; real numbers after AMD cloud)
 
 **Remaining before submit (user):**
 1. Connect Discord on lablab.ai for AMD ACT III.
