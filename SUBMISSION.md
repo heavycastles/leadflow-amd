@@ -33,6 +33,6 @@ AI Agents, LLM, E-commerce
 **Links:**
 - GitHub repo: TODO — `heavycastles/leadflow-amd` (use `scripts/publish_github.sh` when `gh` is logged in)
 - Demo app URL: TODO
-- Video: draft at `docs/demo-draft.mp4` (pending MI300X benchmark segment and user review; script in `docs/video-script.md`, narration in `docs/video-narration.txt`)
+- Video: latest draft `docs/demo-v3.mp4` (also `demo-v2.mp4` / `demo-draft.mp4`; still needs MI300X benchmark segment and user review; script in `docs/video-script.md`, narration in `docs/video-narration.txt`)
 - Slides PDF: `docs/slides.pdf` (local; upload on submit)
 - Cover image: `docs/cover.png` (local; upload on submit)
