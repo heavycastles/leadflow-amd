@@ -1,7 +1,8 @@
 # LeadFlow AI — commerce lead & order agent on AMD
 
 Small shops in Central Asia get dozens of messages a day in Russian, Uzbek and English from Telegram, WhatsApp
-and the web. LeadFlow AI reads every message with an open LLM served by **vLLM on an AMD Instinct MI300X (ROCm)**,
+and the web. LeadFlow AI reads every message with an open LLM served on **AMD GPUs — the AMD Token Factory API**
+(one key, OpenAI-compatible) or, optionally, **vLLM on an AMD Instinct MI300X (ROCm)** for self-hosted benchmarks —
 extracts intent / products / quantities / budget / urgency, drafts a reply in the customer's language, creates an
 order draft, and ranks leads with an **explainable hybrid score** (deterministic rules + model features).
 An n8n workflow wires it to a Telegram shop bot.
@@ -18,9 +19,10 @@ FastAPI  ── POST /leads ──► LeadStore (normalize, de-dupe, rule score)
         │                         │
         │                         ▼
         │                 CommerceAgent                                       app/agent.py
-        │                   ├─ LLMClient ──► OpenAI-compatible /v1/chat/completions
-        │                   │                 = vLLM on AMD Instinct MI300X (ROCm)   app/llm.py
-        │                   │                 (mock fallback when GPU is unreachable)
+        │                   ├─ LLMClient ──► OpenAI-compatible /v1/chat/completions   app/llm.py
+        │                   │                 = AMD Token Factory API (AMD_TOKEN_FACTORY_API_KEY)
+        │                   │                   or vLLM on AMD Instinct MI300X (ROCm, optional)
+        │                   │                 (mock fallback when the endpoint is unreachable)
         │                   ├─ sanitize()   strict validation of model JSON
         │                   ├─ hybrid_score() rules + model features + reasons
         │                   └─ order drafts
@@ -29,29 +31,32 @@ Web dashboard (/)  · /leads · /orders · /metrics (latency, tok/s, backend, fa
 ```
 
 Design choices:
-- **LLM is pluggable via env** (`LLM_BACKEND`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`). Any OpenAI-compatible
-  server works; the reference deployment is vLLM on AMD Developer Cloud.
+- **One key to go live on AMD**: set `AMD_TOKEN_FACTORY_API_KEY` (alias `RADEON_API_KEY`) and the app calls the
+  AMD Token Factory API at `https://developer.amd.com.cn/radeon/api/v1` with `DeepSeek-V4-Flash` by default.
+- **LLM is pluggable via env** (`LLM_BACKEND`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY` — explicit values always
+  win). Any OpenAI-compatible server works, e.g. vLLM on AMD Developer Cloud MI300X for real GPU benchmarks.
 - **No LLM-only decisions**: model output is validated and clamped, and the score always shows *why*.
-- **Graceful degradation**: if the GPU endpoint is down, a deterministic offline analyzer answers and the UI
+- **Graceful degradation**: if the LLM endpoint is down (or no key is set), a deterministic offline analyzer answers and the UI
   marks the result as FALLBACK (disable with `LLM_FALLBACK=0`).
 
 ## AMD usage
 
 | Layer | AMD technology |
 |---|---|
-| Inference hardware | AMD Instinct **MI300X** (192 GB HBM3) on **AMD Developer Cloud** |
-| Software stack | **ROCm** + `rocm/vllm` container, OpenAI-compatible server |
-| Model | `Qwen/Qwen2.5-7B-Instruct` (default; any HF instruct model fits in MI300X memory, incl. 70B-class) |
+| Primary inference | **AMD Token Factory** public model API (AMD GPUs, OpenAI-compatible) — `DeepSeek-V4-Flash` default, any id from `/models` |
+| Optional self-hosted | AMD Instinct **MI300X** (192 GB HBM3) on **AMD Developer Cloud**, **ROCm** + `rocm/vllm`, `Qwen/Qwen2.5-7B-Instruct` |
 | What runs on AMD | every lead analysis: intent classification, entity extraction, multilingual reply drafting |
 | Measured | `scripts/benchmark.py` — latency, aggregate tok/s under concurrency, JSON validity, intent accuracy |
 
-Benchmark results on MI300X: **TODO — fill in after running on AMD Developer Cloud.**
+Token Factory alone is enough to run and submit (`python -m app.llm` prints live latency for one sample;
+`python -m scripts.benchmark` works against it too). Self-hosted MI300X numbers are an optional extra —
+filled in only if Developer Cloud credits are used:
 
 | model | concurrency | req/s | aggregate tok/s | avg latency | intent accuracy |
 |---|---|---|---|---|---|
-| Qwen2.5-7B-Instruct | 8 | TBD | TBD | TBD | TBD |
+| Qwen2.5-7B-Instruct (MI300X, optional) | 8 | TBD | TBD | TBD | TBD |
 
-Local **mock** backend sanity run (not GPU): see [`docs/benchmarks-mock.md`](docs/benchmarks-mock.md) — intent accuracy only; latency/tok/s are not meaningful without MI300X.
+Local **mock** backend sanity run (not GPU): see [`docs/benchmarks-mock.md`](docs/benchmarks-mock.md) — intent accuracy only; latency/tok/s are not meaningful without a real AMD endpoint.
 
 ## Setup
 
@@ -64,17 +69,26 @@ python serve.py            # http://localhost:8080
 ./scripts/demo.sh          # feeds 5 multilingual sample leads
 ```
 
-### 2. AMD Token Factory API (primary — no card / no $100 credit)
-Per lablab ACT III FAQ (2026-10-15): the event is hosted on [notebooks.amd.com/tokenfactory](https://notebooks.amd.com/tokenfactory). Sign up there for an OpenAI-compatible API — **no billing or credit card**. Developers do **not** need the $100 Developer Cloud credit to participate.
+### 2. AMD Token Factory API (primary — one key, no card / no $100 credit)
+Per lablab ACT III FAQ (2026-10-15): the event is hosted on [notebooks.amd.com/tokenfactory](https://notebooks.amd.com/tokenfactory). Sign up there, open **Public Free Model APIs**, pick a model and copy your API key (`rc-...`) — **no billing or credit card**. Developers do **not** need the $100 Developer Cloud credit to participate. One key covers every shared model.
+
+| | |
+|---|---|
+| Base URL | `https://developer.amd.com.cn/radeon/api/v1` (OpenAI-compatible `/chat/completions`, `/models`) |
+| Auth | `Authorization: Bearer <key>` — env `AMD_TOKEN_FACTORY_API_KEY` (or `RADEON_API_KEY`, as in the AMD docs) |
+| Default model | `DeepSeek-V4-Flash` — override with `AMD_TOKEN_FACTORY_MODEL` (or `LLM_MODEL`), e.g. `DeepSeek-V4.1-Flash`, `GLM-5.3-Flash`, `Qwen3.8-27B` |
 
 ```bash
 cp .env.example .env
-# LLM_BACKEND=openai
-# LLM_BASE_URL=<Token Factory base URL from the notebook>
-# LLM_API_KEY=<Token Factory key>
-# LLM_MODEL=<model id shown in Token Factory>
-python serve.py
+# edit .env: AMD_TOKEN_FACTORY_API_KEY=rc-...      <- the only required line
+python -m app.llm      # live check: lists models, confirms the model id, runs one RU/UZ sample (key never printed)
+python serve.py        # dashboard /metrics now shows backend=openai, provider=amd-token-factory
 ```
+Or without a file: `AMD_TOKEN_FACTORY_API_KEY=rc-... python serve.py`.
+Rules: an explicit `LLM_BACKEND=mock` still forces the offline mock; explicit `LLM_BASE_URL` / `LLM_MODEL` /
+`LLM_API_KEY` win over the Token Factory defaults. If a model rejects `response_format`, set `LLM_JSON_MODE=0`.
+Shared endpoints are rate-limited per key/IP with a daily cap; the app falls back to the mock (marked FALLBACK)
+if a call fails.
 
 ### 3. vLLM on AMD Developer Cloud (MI300X — optional, for real GPU benchmarks)
 Requires optional $100 Developer Cloud credits ([developer.amd.com/ai-developer-program](https://developer.amd.com/ai-developer-program/) via [login.amd.com](https://login.amd.com)) only if you want measured MI300X latency/tok/s. Not required to submit.
@@ -83,11 +97,12 @@ Requires optional $100 Developer Cloud credits ([developer.amd.com/ai-developer-
 export HF_TOKEN=...           # if the model is gated
 ./deploy/vllm-rocm.sh         # serves http://<droplet-ip>:8000/v1
 ```
-Then point the app at it:
+Then point the app at it (explicit `LLM_*` win over a Token Factory key):
 ```bash
 cp .env.example .env
 # LLM_BACKEND=openai
 # LLM_BASE_URL=http://<droplet-ip>:8000/v1
+# LLM_MODEL=Qwen/Qwen2.5-7B-Instruct
 python serve.py
 LLM_BACKEND=openai LLM_BASE_URL=http://<droplet-ip>:8000/v1 python -m scripts.benchmark --concurrency 8
 ```
@@ -95,8 +110,9 @@ Tip: run the app on the same droplet and keep port 8000 firewalled, or start vLL
 
 ### 4. docker-compose (app + n8n)
 ```bash
-docker compose up --build                    # app :8080, n8n :5678
-docker compose --profile amd up --build      # also starts vLLM on the local AMD GPU
+docker compose up --build                    # app :8080, n8n :5678 (uses AMD_TOKEN_FACTORY_API_KEY from .env if set)
+LLM_BACKEND=openai LLM_BASE_URL=http://vllm:8000/v1 \
+  docker compose --profile amd up --build    # also starts vLLM on the local AMD GPU
 ```
 In n8n: import `n8n/telegram-leadflow.json`, add Telegram credentials, set `OWNER_CHAT_ID`, activate.
 
@@ -113,6 +129,8 @@ One-click free-tier demo (mock LLM — boots without a GPU). Config: `render.yam
 1. Push this repo to GitHub as a **public** repo (e.g. `heavycastles/leadflow-amd`).
 2. Open [Render Blueprint](https://dashboard.render.com/select-repo?type=blueprint), connect the repo, Apply.
 3. Render builds the `Dockerfile`, sets `LLM_BACKEND=mock`, health-checks `/healthz` on port 8080.
+   For a live AMD demo instead: in the Render dashboard add secret env `AMD_TOKEN_FACTORY_API_KEY`, delete
+   `LLM_BACKEND` and `LLM_HARDWARE` (the key then selects Token Factory; failures still fall back to mock).
 4. Demo URL → paste into `SUBMISSION.md` Links.
 
 Local smoke check of the same image:
@@ -122,7 +140,7 @@ docker run --rm -p 8080:8080 -e LLM_BACKEND=mock leadflow-amd
 # curl http://localhost:8080/healthz
 ```
 
-For the real AMD path (MI300X + vLLM), use Setup §3 (MI300X + vLLM) after Token Factory (§2) and optional Developer Cloud credits for a GPU droplet — do not point the free Render service at a private GPU endpoint unless you firewall it. **Credits are optional:** the hackathon FAQ says Token Factory API alone is enough to participate; $100 credits are only needed for real MI300X benchmarks.
+The live AMD path is Token Factory (Setup §2, one key). Self-hosted MI300X + vLLM (Setup §3) is optional and needs Developer Cloud credits for a GPU droplet — do not point the free Render service at a private GPU endpoint unless you firewall it. **Credits are optional:** the hackathon FAQ says Token Factory API alone is enough to participate; $100 credits are only needed for real MI300X benchmarks.
 
 ## API
 | Method | Path | |

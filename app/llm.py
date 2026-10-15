@@ -1,8 +1,16 @@
-"""LLM layer: OpenAI-compatible chat client (vLLM on ROCm / AMD Instinct MI300X) with a mock fallback.
+"""LLM layer: OpenAI-compatible chat client (AMD Token Factory / vLLM on ROCm) with a mock fallback.
 
-The production path is a vLLM server started with the ROCm image on AMD Developer Cloud
-(see deploy/vllm-rocm.sh). Anything that speaks `/v1/chat/completions` works, so the same
-code runs against AMD hardware, a local vLLM, or the offline mock used in tests.
+One-key live path: set AMD_TOKEN_FACTORY_API_KEY (or RADEON_API_KEY) and the client talks to the
+AMD Token Factory public model API (https://developer.amd.com.cn/radeon/api/v1, OpenAI-compatible,
+no card needed). Optional: a vLLM server started with the ROCm image on AMD Developer Cloud MI300X
+(see deploy/vllm-rocm.sh) for real GPU benchmarks. Anything that speaks `/v1/chat/completions` works,
+so the same code runs against AMD Token Factory, AMD hardware, a local vLLM, or the offline mock.
+
+Resolution order (explicit LLM_* always wins; blank values count as unset):
+  backend : LLM_BACKEND  >  "openai" if a Token Factory key is set  >  "mock"
+  base_url: LLM_BASE_URL >  AMD_TOKEN_FACTORY_BASE_URL / TOKEN_FACTORY_BASE_URL (with key) > localhost vLLM
+  api_key : LLM_API_KEY  >  AMD_TOKEN_FACTORY_API_KEY  >  RADEON_API_KEY  >  "EMPTY"
+  model   : LLM_MODEL    >  AMD_TOKEN_FACTORY_MODEL (with key)  >  DEFAULT_TOKEN_FACTORY_MODEL / Qwen2.5-7B
 """
 
 from __future__ import annotations
@@ -47,15 +55,47 @@ class LLMResult:
         return round(self.completion_tokens / (self.latency_ms / 1000), 1)
 
 
+TOKEN_FACTORY_BASE_URL = "https://developer.amd.com.cn/radeon/api/v1"  # noqa: S105 - not a secret
+DEFAULT_TOKEN_FACTORY_MODEL = "DeepSeek-V4-Flash"  # noqa: S105 - not a secret; any id from GET {base}/models
+TOKEN_FACTORY_HARDWARE = "AMD Radeon Cloud GPUs (AMD Token Factory API)"  # noqa: S105 - not a secret
+VLLM_BASE_URL = "http://localhost:8000/v1"
+VLLM_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+VLLM_HARDWARE = "AMD Instinct MI300X (ROCm, vLLM)"
+
+
+def _env(name: str, default: str = "") -> str:
+    """Env var, treating unset *and* blank (e.g. `LLM_BASE_URL=` copied from .env.example) as default."""
+    v = os.getenv(name, "").strip()
+    return v or default
+
+
+def token_factory_key() -> str:
+    return _env("AMD_TOKEN_FACTORY_API_KEY") or _env("RADEON_API_KEY")
+
+
 def _settings() -> dict:
+    tf_key = token_factory_key()
+    backend = _env("LLM_BACKEND", "openai" if tf_key else "mock").lower()
+    explicit_url = _env("LLM_BASE_URL")
+    tf_url = _env("AMD_TOKEN_FACTORY_BASE_URL") or _env("TOKEN_FACTORY_BASE_URL") or TOKEN_FACTORY_BASE_URL
+    # Token Factory is the target when a key is present and no explicit LLM_BASE_URL points elsewhere.
+    use_tf = bool(tf_key) and not explicit_url
+    base_url = explicit_url or (tf_url if tf_key else VLLM_BASE_URL)
+    model = _env("LLM_MODEL") or (
+        _env("AMD_TOKEN_FACTORY_MODEL", DEFAULT_TOKEN_FACTORY_MODEL) if use_tf else VLLM_MODEL)
     return {
-        "backend": os.getenv("LLM_BACKEND", "mock").lower(),
-        "base_url": os.getenv("LLM_BASE_URL", "http://localhost:8000/v1").rstrip("/"),
-        "model": os.getenv("LLM_MODEL", "Qwen/Qwen2.5-7B-Instruct"),
-        "api_key": os.getenv("LLM_API_KEY", "EMPTY"),
-        "timeout": float(os.getenv("LLM_TIMEOUT", "30")),
-        "fallback": os.getenv("LLM_FALLBACK", "1") not in {"0", "false", "no"},
-        "hardware": os.getenv("LLM_HARDWARE", "AMD Instinct MI300X (ROCm, vLLM)"),
+        "backend": backend,
+        "provider": "amd-token-factory" if use_tf and backend != "mock" else (
+            "mock" if backend == "mock" else "openai-compatible"),
+        "base_url": base_url.rstrip("/"),
+        "model": model,
+        "api_key": _env("LLM_API_KEY") or tf_key or "EMPTY",
+        "timeout": float(_env("LLM_TIMEOUT", "30")),
+        "fallback": _env("LLM_FALLBACK", "1").lower() not in {"0", "false", "no"},
+        # Some Token Factory models ignore/refuse response_format; LLM_JSON_MODE=0 drops it
+        # (extract_json() still tolerates chatter around the JSON object).
+        "json_mode": _env("LLM_JSON_MODE", "1").lower() not in {"0", "false", "no"},
+        "hardware": _env("LLM_HARDWARE", TOKEN_FACTORY_HARDWARE if use_tf else VLLM_HARDWARE),
     }
 
 
@@ -142,7 +182,7 @@ class LLMClient:
 
     @property
     def info(self) -> dict:
-        return {k: self.cfg[k] for k in ("backend", "base_url", "model", "hardware", "fallback")}
+        return {k: self.cfg[k] for k in ("backend", "provider", "base_url", "model", "hardware", "fallback")}
 
     def analyze(self, message: str) -> LLMResult:
         if self.cfg["backend"] == "mock":
@@ -167,10 +207,11 @@ class LLMClient:
             "model": cfg["model"],
             "temperature": 0.1,
             "max_tokens": 400,
-            "response_format": {"type": "json_object"},
             "messages": [{"role": "system", "content": SYSTEM_PROMPT},
                          {"role": "user", "content": message}],
         }
+        if cfg["json_mode"]:
+            body["response_format"] = {"type": "json_object"}
         t0 = time.perf_counter()
         with httpx.Client(timeout=cfg["timeout"], transport=self._transport) as http:
             r = http.post(f"{cfg['base_url']}/chat/completions", json=body,
@@ -184,4 +225,44 @@ class LLMClient:
                          latency_ms=round(latency, 1),
                          prompt_tokens=usage.get("prompt_tokens", 0),
                          completion_tokens=usage.get("completion_tokens", 0),
-                         extra={"hardware": cfg["hardware"]})
+                         extra={"hardware": cfg["hardware"], "provider": cfg["provider"]})
+
+
+def check(transport: httpx.BaseTransport | None = None) -> dict:
+    """Live smoke check: list models, confirm the configured one exists, run one tiny analysis.
+
+    `python -m app.llm` — needs AMD_TOKEN_FACTORY_API_KEY (or RADEON_API_KEY / LLM_* for vLLM).
+    Never prints the key.
+    """
+    cfg = _settings()
+    out: dict = {"backend": cfg["backend"], "provider": cfg["provider"], "base_url": cfg["base_url"],
+                 "model": cfg["model"], "key_set": cfg["api_key"] != "EMPTY"}
+    if cfg["backend"] == "mock":
+        return {**out, "ok": False,
+                "error": "backend is mock (set AMD_TOKEN_FACTORY_API_KEY or LLM_BACKEND=openai)"}
+    headers = {"Authorization": f"Bearer {cfg['api_key']}"}
+    try:
+        with httpx.Client(timeout=cfg["timeout"], transport=transport) as http:
+            r = http.get(f"{cfg['base_url']}/models", headers=headers)
+            r.raise_for_status()
+            payload = r.json()
+        items = payload.get("data", []) if isinstance(payload, dict) else payload
+        ids = sorted({m.get("id") for m in items if isinstance(m, dict) and m.get("id")})
+        out["models"] = ids
+        out["model_available"] = cfg["model"] in ids
+    except Exception as exc:  # noqa: BLE001
+        return {**out, "ok": False, "error": f"list models: {type(exc).__name__}: {exc}"[:200]}
+    client = LLMClient(transport=transport)
+    client.cfg["fallback"] = False
+    try:
+        res = client.analyze("Salom! 2 dona choynak kerak, narxi qancha?")
+        out["sample"] = {"intent": res.data.get("intent"), "language": res.data.get("language"),
+                         "latency_ms": res.latency_ms, "completion_tokens": res.completion_tokens}
+    except Exception as exc:  # noqa: BLE001
+        return {**out, "ok": False, "error": f"chat: {type(exc).__name__}: {exc}"[:200]}
+    out["ok"] = True
+    return out
+
+
+if __name__ == "__main__":  # python -m app.llm -> live config check
+    print(json.dumps(check(), indent=2, ensure_ascii=False))

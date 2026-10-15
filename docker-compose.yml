@@ -1,13 +1,17 @@
-# App + n8n. LLM points at vLLM on an AMD MI300X (set LLM_BASE_URL in .env); without it the app runs on the mock.
+# App + n8n. Live LLM = AMD Token Factory when AMD_TOKEN_FACTORY_API_KEY is set in .env (one key);
+# or vLLM on an AMD MI300X with LLM_BACKEND=openai LLM_BASE_URL=http://vllm:8000/v1 (profile "amd").
+# With neither, the app runs on the offline mock. Blank values = use app defaults (see app/llm.py).
 services:
   app:
     build: .
     ports: ["8080:8080"]
     env_file: [{path: .env, required: false}]
     environment:
-      LLM_BACKEND: ${LLM_BACKEND:-mock}
-      LLM_BASE_URL: ${LLM_BASE_URL:-http://vllm:8000/v1}
-      LLM_MODEL: ${LLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      LLM_BACKEND: ${LLM_BACKEND:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      AMD_TOKEN_FACTORY_API_KEY: ${AMD_TOKEN_FACTORY_API_KEY:-}
+      AMD_TOKEN_FACTORY_MODEL: ${AMD_TOKEN_FACTORY_MODEL:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8080/healthz')"]
       interval: 10s

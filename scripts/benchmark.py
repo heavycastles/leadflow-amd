@@ -1,6 +1,8 @@
-"""Benchmark the configured LLM endpoint (e.g. vLLM on MI300X): latency, tok/s, JSON validity, intent accuracy.
+"""Benchmark the configured LLM endpoint: latency, tok/s, JSON validity, intent accuracy.
 
-Usage: LLM_BACKEND=openai LLM_BASE_URL=http://<ip>:8000/v1 python -m scripts.benchmark [--concurrency 8]
+Usage (AMD Token Factory, one key):  AMD_TOKEN_FACTORY_API_KEY=rc-... python -m scripts.benchmark --concurrency 2
+Usage (vLLM on MI300X, optional):    LLM_BACKEND=openai LLM_BASE_URL=http://<ip>:8000/v1 python -m scripts.benchmark
+Shared Token Factory endpoints are rate-limited per key/IP, so keep concurrency low there.
 """
 
 from __future__ import annotations

@@ -16,5 +16,7 @@ services:
       - key: LLM_FALLBACK
         value: "1"
       - key: LLM_HARDWARE
-        value: "mock (Render free tier; MI300X TBD)"
+        value: "mock (Render free tier; live = AMD Token Factory key)"
+      # Live AMD demo (optional): add secret AMD_TOKEN_FACTORY_API_KEY in the dashboard and remove
+      # LLM_BACKEND / LLM_HARDWARE above — the key alone selects https://developer.amd.com.cn/radeon/api/v1.
       # Render injects PORT; serve.py reads it (default 8080).
