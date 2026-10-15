@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Creates public repo heavycastles/leadflow-amd and pushes main.
+# Creates heavycastles/leadflow-amd (private by default) and pushes main.
+# VISIBILITY=private|public (default: private). Public is opt-in — need user OK.
 # Requires: gh authenticated as heavycastles. Do NOT run until ready.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -7,6 +8,15 @@ cd "$(dirname "$0")/.."
 REPO_NAME="leadflow-amd"
 OWNER="heavycastles"
 REMOTE_URL="https://github.com/${OWNER}/${REPO_NAME}.git"
+VISIBILITY="${VISIBILITY:-private}"
+
+case "$VISIBILITY" in
+  private|public) ;;
+  *)
+    echo "VISIBILITY must be private or public (got: ${VISIBILITY})" >&2
+    exit 1
+    ;;
+esac
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "gh CLI not found" >&2
@@ -40,7 +50,8 @@ fi
 if gh repo view "${OWNER}/${REPO_NAME}" >/dev/null 2>&1; then
   echo "Repo ${OWNER}/${REPO_NAME} already exists — adding remote and pushing"
 else
-  gh repo create "${OWNER}/${REPO_NAME}" --public --source=. --remote=origin --description "LeadFlow AI — multilingual commerce lead & order agent on AMD MI300X (ACT III)"
+  echo "Creating ${VISIBILITY} repo ${OWNER}/${REPO_NAME}"
+  gh repo create "${OWNER}/${REPO_NAME}" "--${VISIBILITY}" --source=. --remote=origin --description "LeadFlow AI — multilingual commerce lead & order agent on AMD MI300X (ACT III)"
 fi
 
 git branch -M main 2>/dev/null || true
@@ -51,4 +62,4 @@ else
 fi
 
 git push -u origin main
-echo "Published: https://github.com/${OWNER}/${REPO_NAME}"
+echo "Published (${VISIBILITY}): https://github.com/${OWNER}/${REPO_NAME}"
