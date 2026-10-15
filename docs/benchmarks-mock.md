@@ -3,7 +3,7 @@
 **Label: MOCK only.** These numbers come from `LLM_BACKEND=mock` (deterministic offline analyzer in `app/llm.py`).
 They are **not** measurements on AMD Instinct MI300X / vLLM / ROCm.
 
-Real GPU numbers stay **TBD** until AMD Developer Cloud credits are claimed and `scripts/benchmark.py` is run against vLLM on MI300X. Do not treat mock latency or tok/s as submission hardware evidence.
+Real GPU numbers stay **TBD** until (optional) AMD Developer Cloud credits are claimed and `scripts/benchmark.py` is run against vLLM on MI300X. Token Factory API access alone is enough to participate — credits are only for real MI300X benches. Do not treat mock latency or tok/s as submission hardware evidence.
 
 ## How this was produced
 

@@ -64,7 +64,20 @@ python serve.py            # http://localhost:8080
 ./scripts/demo.sh          # feeds 5 multilingual sample leads
 ```
 
-### 2. vLLM on AMD Developer Cloud (MI300X)
+### 2. AMD Token Factory API (primary — no card / no $100 credit)
+Per lablab ACT III FAQ (2026-10-15): the event is hosted on [notebooks.amd.com/tokenfactory](https://notebooks.amd.com/tokenfactory). Sign up there for an OpenAI-compatible API — **no billing or credit card**. Developers do **not** need the $100 Developer Cloud credit to participate.
+
+```bash
+cp .env.example .env
+# LLM_BACKEND=openai
+# LLM_BASE_URL=<Token Factory base URL from the notebook>
+# LLM_API_KEY=<Token Factory key>
+# LLM_MODEL=<model id shown in Token Factory>
+python serve.py
+```
+
+### 3. vLLM on AMD Developer Cloud (MI300X — optional, for real GPU benchmarks)
+Requires optional $100 Developer Cloud credits ([developer.amd.com/ai-developer-program](https://developer.amd.com/ai-developer-program/) via [login.amd.com](https://login.amd.com)) only if you want measured MI300X latency/tok/s. Not required to submit.
 ```bash
 # on the GPU droplet (ROCm image)
 export HF_TOKEN=...           # if the model is gated
@@ -80,7 +93,7 @@ LLM_BACKEND=openai LLM_BASE_URL=http://<droplet-ip>:8000/v1 python -m scripts.be
 ```
 Tip: run the app on the same droplet and keep port 8000 firewalled, or start vLLM with `VLLM_API_KEY`.
 
-### 3. docker-compose (app + n8n)
+### 4. docker-compose (app + n8n)
 ```bash
 docker compose up --build                    # app :8080, n8n :5678
 docker compose --profile amd up --build      # also starts vLLM on the local AMD GPU
@@ -109,7 +122,7 @@ docker run --rm -p 8080:8080 -e LLM_BACKEND=mock leadflow-amd
 # curl http://localhost:8080/healthz
 ```
 
-For the real AMD path (MI300X + vLLM), use the Setup §2 steps above after claiming Developer Cloud credits — do not point the free Render service at a private GPU endpoint unless you firewall it.
+For the real AMD path (MI300X + vLLM), use Setup §3 (MI300X + vLLM) after Token Factory (§2) and optional Developer Cloud credits for a GPU droplet — do not point the free Render service at a private GPU endpoint unless you firewall it. **Credits are optional:** the hackathon FAQ says Token Factory API alone is enough to participate; $100 credits are only needed for real MI300X benchmarks.
 
 ## API
 | Method | Path | |

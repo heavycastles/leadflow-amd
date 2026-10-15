@@ -40,8 +40,8 @@ AI Agents, LLM, E-commerce
 - Mock benchmark note: `docs/benchmarks-mock.md` (NOT MI300X; real numbers after AMD cloud)
 
 **Remaining before submit (user):**
-1. Connect Discord on lablab.ai for AMD ACT III.
-2. Sign in at [login.amd.com](https://login.amd.com), then claim $100 AMD Developer Cloud credits at [developer.amd.com/ai-developer-program](https://developer.amd.com/ai-developer-program/) (needed for MI300X benchmarks).
+1. Connect Discord on lablab.ai for AMD ACT III (Action Required emails from no-reply@lablab.ai).
+2. Sign up for AMD Token Factory API at [notebooks.amd.com/tokenfactory](https://notebooks.amd.com/tokenfactory) — **no billing / credit card needed**. Per lablab FAQ (2026-10-15): developers do **not** need the $100 credit to participate; the Token Factory API is enough. Optional: claim $100 AMD Developer Cloud credits at [developer.amd.com/ai-developer-program](https://developer.amd.com/ai-developer-program/) only if you want real MI300X benchmarks (login.amd.com).
 3. Approve creating/publishing public GitHub repo `heavycastles/leadflow-amd` (local pack is ready; push when approved).
 4. Approve demo deploy via Render Blueprint (`render.yaml` → free tier, mock LLM) and paste the live URL into Links above.
 5. Review `docs/demo-v3.mp4` (upload to YouTube/Drive for the form if required).
