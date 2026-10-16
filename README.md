@@ -30,6 +30,13 @@ FastAPI  ── POST /leads ──► LeadStore (normalize, de-dupe, rule score)
 Web dashboard (/)  · /leads · /orders · /metrics (latency, tok/s, backend, fallbacks)
 ```
 
+![LeadFlow AI dashboard — inbox](docs/ui-v2/inbox.png)
+
+Dashboard views (single static page, no build step, no external JS): **Inbox** (messenger view with RU/UZ/EN
+flags, AI draft reply, explainable score and order draft), **Leads** (ranked table), **Orders**, **Analytics**
+(inline-SVG charts computed from live `/leads`), **AMD · Model** (backend badge from `/version`; GPU benchmark
+numbers stay *pending* until measured). Deep link: `/#inbox?lead=1`. More screenshots in [`docs/ui-v2/`](docs/ui-v2).
+
 Design choices:
 - **One key to go live on AMD**: set `AMD_TOKEN_FACTORY_API_KEY` (alias `RADEON_API_KEY`) and the app calls the
   AMD Token Factory API at `https://developer.amd.com.cn/radeon/api/v1` with `DeepSeek-V4-Flash` by default.

@@ -171,3 +171,8 @@ def test_env_example_plus_one_key_goes_live(clean_env, tmp_path):
     assert cfg["base_url"] == TOKEN_FACTORY_BASE_URL and cfg["api_key"] == "rc-from-file"
     assert cfg["model"] == "DeepSeek-V4-Flash"
     assert "AMD_TOKEN_FACTORY_API_KEY" not in os.environ
+
+
+def test_mock_uz_complaint_detected_as_uzbek():
+    d = mock_analyze("Kurtka brak keldi, pulni qaytaring")
+    assert d["language"] == "uz" and d["intent"] == "complaint" and d["next_action"] == "escalate"

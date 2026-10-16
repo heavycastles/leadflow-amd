@@ -29,3 +29,19 @@ def test_lead_flow_end_to_end():
 def test_validation():
     assert client.post("/leads", json={"name": "Nobody"}).status_code == 422
     assert client.get("/leads/99999").status_code == 404
+
+
+def test_dashboard_page_renders():
+    r = client.get("/")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")
+    html = r.text
+    # sidebar navigation + every dashboard view is present
+    for view in ("inbox", "leads", "orders", "analytics", "model"):
+        assert f'data-view="{view}"' in html and f'id="v-{view}"' in html
+    # honest model badge, KPI/chart containers, benchmark numbers flagged as pending
+    for marker in ('id="model-badge"', 'id="kpis-leads"', 'id="ch-score"', 'id="ch-lang"', 'id="ltable"',
+                   "Offline mock", "pending — not measured yet"):
+        assert marker in html
+    # dashboard only talks to existing endpoints
+    for endpoint in ("/leads", "/orders", "/metrics", "/version"):
+        assert f"'{endpoint}'" in html

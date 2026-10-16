@@ -1,65 +1,600 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>LeadFlow AI on AMD</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LeadFlow AI · Commerce agent on AMD</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="LeadFlow AI — multilingual (RU/UZ/EN) sales agent that turns chat messages into ranked leads and order drafts. Built for AMD GPUs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-body{font-family:system-ui,sans-serif;margin:0;background:#0f1115;color:#e8e8e8}
-header{background:#ed1c24;padding:14px 24px;font-weight:700;font-size:20px}
-main{display:grid;grid-template-columns:340px 1fr;gap:20px;padding:20px}
-.card{background:#1a1d24;border-radius:10px;padding:16px}
-input,select,textarea,button{width:100%;box-sizing:border-box;margin:4px 0 10px;padding:8px;border-radius:6px;border:1px solid #333;background:#11141a;color:#eee}
-button{background:#ed1c24;border:0;font-weight:700;cursor:pointer}
-table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #2a2e37;vertical-align:top;font-size:14px;text-align:left}
-.score{font-size:22px;font-weight:700}.tag{display:inline-block;background:#2a2e37;border-radius:4px;padding:1px 6px;margin:1px;font-size:12px}
-.muted{color:#999;font-size:12px}#metrics{font-size:13px}
-</style></head><body>
-<header>LeadFlow AI &mdash; commerce lead &amp; order agent <span class="muted" id="hw"></span></header>
-<main>
-<section>
- <div class="card"><h3>New message</h3>
-  <input id="name" placeholder="Name" value="Dilnoza">
-  <select id="source"><option>telegram</option><option>whatsapp</option><option>web</option><option>email</option><option>phone</option><option>referral</option></select>
-  <input id="phone" placeholder="Phone" value="+998 90 123 45 67">
-  <input id="email" placeholder="Email">
-  <textarea id="message" rows="4">Salom! 3 dona kurtka kerak, bugun olaman. Narxi qancha? Budjet 1500000 so'm</textarea>
-  <button onclick="send()">Analyze with agent</button>
-  <button onclick="demo()" style="background:#444">Load demo leads</button>
- </div>
- <div class="card" style="margin-top:20px"><h3>AMD inference</h3><div id="metrics"></div></div>
-</section>
-<section class="card"><h3>Ranked leads</h3>
- <table><thead><tr><th>Score</th><th>Lead</th><th>Agent</th><th>Reply draft</th></tr></thead><tbody id="rows"></tbody></table>
- <h3>Order drafts</h3><div id="orders" class="muted">none</div>
-</section></main>
+:root{
+  --bg:#0a0b0e;--bg2:#0f1115;--panel:#14161b;--panel2:#191c22;--line:#23262e;--line2:#2d313a;
+  --tx:#eceef2;--tx2:#a4a9b4;--tx3:#6b7180;
+  --red:#ed1c24;--red2:#ff3b41;--redbg:rgba(237,28,36,.12);
+  --hot:#ff4d4f;--warm:#f5a524;--cold:#4ea8ff;--esc:#b57bff;--spam:#6b7180;--ok:#2fd27c;
+  --r:14px;--sh:0 1px 0 rgba(255,255,255,.03) inset,0 10px 30px -12px rgba(0,0,0,.6);
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--tx);
+  font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#262a33;border-radius:10px;border:2px solid var(--bg2)}
+.app{display:grid;grid-template-columns:240px 1fr;height:100vh}
+
+/* ---------- sidebar ---------- */
+.side{background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 14px;gap:6px}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--red2),#9c0d12);display:grid;place-items:center;
+  box-shadow:0 6px 20px -6px rgba(237,28,36,.7)}
+.brand b{font-size:15px;letter-spacing:-.01em}.brand small{display:block;color:var(--tx3);font-size:11px;font-weight:500}
+.navlbl{color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:12px 10px 6px}
+.nav{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;color:var(--tx2);text-decoration:none;font-weight:500;
+  transition:background .15s,color .15s;position:relative}
+.nav svg{width:18px;height:18px;flex:none;opacity:.85}
+.nav:hover{background:#171a20;color:var(--tx)}
+.nav.on{background:var(--redbg);color:#fff}
+.nav.on::before{content:"";position:absolute;left:-14px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--red)}
+.nav.on svg{color:var(--red2);opacity:1}
+.nav .cnt{margin-left:auto;font-size:11px;font-weight:600;background:#22252d;color:var(--tx2);border-radius:20px;padding:1px 8px}
+.nav.on .cnt{background:var(--red);color:#fff}
+.sidefoot{margin-top:auto;border:1px solid var(--line);border-radius:12px;padding:12px;background:linear-gradient(180deg,#14161b,#101216)}
+.sidefoot .t{font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px}
+.sidefoot p{margin:6px 0 0;color:var(--tx3);font-size:11.5px}
+
+/* ---------- topbar ---------- */
+.main{display:flex;flex-direction:column;min-width:0;height:100vh}
+.top{height:64px;flex:none;display:flex;align-items:center;gap:14px;padding:0 26px;border-bottom:1px solid var(--line);
+  background:rgba(10,11,14,.8);backdrop-filter:blur(10px)}
+.top h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.02em}
+.top .sub{color:var(--tx3);font-size:12.5px}
+.sp{flex:1}
+.badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line2);background:var(--panel);border-radius:999px;
+  padding:6px 12px 6px 10px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--warm);box-shadow:0 0 0 3px rgba(245,165,36,.18)}
+.dot.live{background:var(--ok);box-shadow:0 0 0 3px rgba(47,210,124,.18);animation:pulse 2s infinite}
+.dot.fb{background:var(--hot);box-shadow:0 0 0 3px rgba(255,77,79,.18)}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(47,210,124,0)}}
+.badge .m{font-family:var(--mono);font-weight:500;color:var(--tx2);font-size:11.5px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line2);background:var(--panel2);border-radius:10px;padding:8px 14px;
+  font-weight:600;font-size:13px;cursor:pointer;transition:transform .1s,background .15s,border-color .15s}
+.btn:hover{background:#20242c;border-color:#3a3f4a}.btn:active{transform:translateY(1px)}
+.btn.pri{background:linear-gradient(180deg,var(--red2),var(--red));border-color:transparent;color:#fff;box-shadow:0 8px 20px -10px rgba(237,28,36,.9)}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn svg{width:16px;height:16px}
+
+/* ---------- content ---------- */
+.content{flex:1;overflow:auto;padding:24px 26px 40px}
+.view{display:none;animation:fade .28s ease}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh)}
+.card>.hd{display:flex;align-items:center;gap:10px;padding:16px 18px 0}
+.card>.hd h3{margin:0;font-size:14px;font-weight:650;letter-spacing:-.01em}
+.card>.hd .hint{color:var(--tx3);font-size:12px}
+.card>.bd{padding:16px 18px 18px}
+.grid{display:grid;gap:16px}
+.kpis{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px}
+.kpi{padding:16px 18px;position:relative;overflow:hidden}
+.kpi .l{color:var(--tx2);font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:8px}
+.kpi .l i{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:#1d2027}
+.kpi .l i svg{width:15px;height:15px}
+.kpi .v{font-size:30px;font-weight:750;letter-spacing:-.03em;margin-top:10px;font-variant-numeric:tabular-nums}
+.kpi .s{color:var(--tx3);font-size:12px;margin-top:2px}
+.kpi::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;
+  background:radial-gradient(circle,var(--glow,rgba(237,28,36,.16)),transparent 70%)}
+.muted{color:var(--tx3)}.mono{font-family:var(--mono);font-size:12px}
+.empty{padding:40px 20px;text-align:center;color:var(--tx3)}
+.empty b{display:block;color:var(--tx2);font-size:15px;margin-bottom:6px}
+
+/* ---------- pills, flags, avatars ---------- */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:650;border-radius:999px;padding:3px 9px;text-transform:capitalize;
+  background:color-mix(in srgb,var(--c) 14%,transparent);color:color-mix(in srgb,var(--c) 85%,#fff);border:1px solid color-mix(in srgb,var(--c) 30%,transparent)}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--c)}
+.p-hot{--c:var(--hot)}.p-warm{--c:var(--warm)}.p-cold{--c:var(--cold)}.p-escalated{--c:var(--esc)}.p-spam{--c:var(--spam)}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:550;color:var(--tx2);background:#1c1f26;border:1px solid var(--line2);
+  border-radius:7px;padding:2px 7px}
+.flag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.03em}
+.flag i{width:18px;height:12px;border-radius:2.5px;display:inline-block;box-shadow:0 0 0 1px rgba(255,255,255,.12)}
+.f-ru i{background:linear-gradient(#fff 0 33.3%,#0039a6 33.3% 66.6%,#d52b1e 66.6%)}
+.f-uz i{background:linear-gradient(#1eb5e6 0 31%,#ce1126 31% 35%,#fff 35% 65%,#ce1126 65% 69%,#1eb53a 69%)}
+.f-en i{background:linear-gradient(#c8102e,#c8102e) center/100% 22% no-repeat,linear-gradient(#c8102e,#c8102e) center/18% 100% no-repeat,
+  linear-gradient(#fff,#fff) center/100% 40% no-repeat,linear-gradient(#fff,#fff) center/32% 100% no-repeat,#012169}
+.av{width:36px;height:36px;border-radius:11px;flex:none;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;
+  background:linear-gradient(135deg,hsl(var(--h) 70% 52%),hsl(calc(var(--h) + 40) 70% 38%));letter-spacing:-.02em}
+.av.sm{width:30px;height:30px;border-radius:9px;font-size:12px}
+.src{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2);text-transform:capitalize}
+.src svg{width:13px;height:13px}
+.bar{height:6px;border-radius:6px;background:#22252d;overflow:hidden;width:100%}
+.bar>span{display:block;height:100%;border-radius:6px;background:var(--c);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.scorecell{display:flex;align-items:center;gap:10px;min-width:150px}
+.scorecell b{width:28px;text-align:right;font-variant-numeric:tabular-nums;font-size:14px}
+
+/* ---------- table ---------- */
+table{width:100%;border-collapse:separate;border-spacing:0}
+th{font-size:11.5px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr{transition:background .12s;cursor:pointer}
+tbody tr:hover{background:#171a20}
+tbody tr:last-child td{border-bottom:0}
+.who{display:flex;align-items:center;gap:11px;min-width:0}
+.who .n{font-weight:600}.who .c{color:var(--tx3);font-size:12px}
+.clip{max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx2)}
+
+/* ---------- inbox ---------- */
+.inbox{display:grid;grid-template-columns:320px minmax(0,1fr) 330px;height:calc(100vh - 64px - 48px);min-height:520px;overflow:hidden;padding:0}
+.convs{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.convs .hd{padding:14px 14px 10px;border-bottom:1px solid var(--line)}
+.search{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;color:var(--tx3)}
+.search input{background:none;border:0;outline:0;flex:1;color:var(--tx)}
+.filters{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.chip{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid var(--line2);color:var(--tx2);cursor:pointer;background:none}
+.chip.on{background:var(--tx);color:#000;border-color:var(--tx)}
+.clist{overflow:auto;flex:1}
+.conv{display:flex;gap:11px;padding:13px 14px;border-bottom:1px solid #1b1e24;cursor:pointer;transition:background .12s;position:relative}
+.conv:hover{background:#171a20}
+.conv.on{background:#1a1d24}.conv.on::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red)}
+.conv .meta{flex:1;min-width:0}
+.conv .r1{display:flex;align-items:center;gap:8px}.conv .r1 b{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conv .r1 time{color:var(--tx3);font-size:11.5px}
+.conv .pv{color:var(--tx2);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:3px 0 6px}
+.conv .r3{display:flex;align-items:center;gap:8px}
+.thread{display:flex;flex-direction:column;min-width:0;min-height:0;background:radial-gradient(1200px 400px at 50% -10%,rgba(237,28,36,.05),transparent),var(--bg2)}
+.thd{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+.thd .n{font-weight:650}.thd .c{color:var(--tx3);font-size:12px}
+.msgs{flex:1;overflow:auto;padding:22px 22px 10px;display:flex;flex-direction:column;gap:14px}
+.day{align-self:center;font-size:11px;color:var(--tx3);background:#15181d;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.msg{max-width:76%;display:flex;flex-direction:column;gap:4px;animation:pop .3s ease both}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.msg .b{padding:11px 14px;border-radius:16px;font-size:14px;white-space:pre-wrap;word-wrap:break-word}
+.msg.in{align-self:flex-start}.msg.in .b{background:#1e2128;border:1px solid var(--line2);border-top-left-radius:5px}
+.msg.out{align-self:flex-end;align-items:flex-end}
+.msg.out .b{background:linear-gradient(135deg,#d3171e,#a70f15);color:#fff;border-top-right-radius:5px;box-shadow:0 10px 24px -14px rgba(237,28,36,.8)}
+.msg .ft{font-size:11px;color:var(--tx3);display:flex;gap:8px;align-items:center;padding:0 4px}
+.sys{align-self:center;max-width:90%;font-size:12px;color:var(--tx2);background:#15181d;border:1px dashed var(--line2);border-radius:10px;padding:8px 12px;
+  display:flex;gap:8px;align-items:center}
+.sys svg{width:14px;height:14px;color:var(--red2);flex:none}
+.compose{border-top:1px solid var(--line);padding:12px 16px;background:var(--panel);display:flex;gap:10px;align-items:flex-end}
+.compose textarea{flex:1;resize:none;background:var(--bg2);border:1px solid var(--line2);border-radius:12px;padding:10px 12px;outline:0;min-height:44px;max-height:120px}
+.compose textarea:focus,.field input:focus,.field select:focus,.field textarea:focus{border-color:#4a4f5c}
+.detail{border-left:1px solid var(--line);overflow:auto;padding:18px}
+.detail h4{margin:18px 0 8px;font-size:11.5px;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.detail h4:first-child{margin-top:0}
+.bigscore{display:flex;align-items:center;gap:16px}
+.ring{--p:0;--c:var(--hot);width:76px;height:76px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:conic-gradient(var(--c) calc(var(--p)*1%),#23262e 0);transition:--p .6s}
+.ring>div{width:62px;height:62px;border-radius:50%;background:var(--panel);display:grid;place-items:center;font-size:22px;font-weight:750;font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:7px 12px;font-size:13px}
+.kv span:nth-child(odd){color:var(--tx3)}
+.reasons{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.reasons li{display:flex;gap:8px;font-size:12.5px;color:var(--tx2)}
+.reasons li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--red);margin-top:6px;flex:none}
+.order{border:1px solid var(--line2);border-radius:12px;background:linear-gradient(180deg,#181b21,#14161b);overflow:hidden}
+.order .oh{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px dashed var(--line2)}
+.order .oh b{font-family:var(--mono);font-size:12.5px}
+.order .it{display:flex;justify-content:space-between;padding:8px 13px;font-size:13px}
+.order .tot{display:flex;justify-content:space-between;padding:10px 13px;border-top:1px dashed var(--line2);font-weight:650}
+.status{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--warm);background:rgba(245,165,36,.1);border-radius:6px;padding:2px 7px;margin-left:auto}
+
+/* ---------- charts ---------- */
+.charts{grid-template-columns:1.4fr 1fr 1fr;margin-bottom:16px}
+.chart svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-direction:column;gap:8px;font-size:12.5px}
+.legend div{display:flex;align-items:center;gap:8px}.legend i{width:10px;height:10px;border-radius:3px}
+.legend b{margin-left:auto;font-variant-numeric:tabular-nums}
+.donutwrap{display:flex;align-items:center;gap:18px}
+.two{grid-template-columns:1.6fr 1fr}
+.ocards{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.pending{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:650;color:var(--warm);background:rgba(245,165,36,.1);
+  border:1px dashed rgba(245,165,36,.45);border-radius:8px;padding:3px 8px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;gap:10px}
+.hw{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.hw .card{padding:14px 16px}
+.hw .l{color:var(--tx3);font-size:12px}.hw .v{font-weight:650;margin-top:6px;word-break:break-word}
+
+/* ---------- modal / toast ---------- */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;place-items:center;z-index:50}
+.modal.on{display:grid;animation:fade .2s}
+.modal .card{width:min(520px,92vw);padding:20px}
+.modal h3{margin:0 0 4px}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.field label{font-size:12px;color:var(--tx2);font-weight:600}
+.field input,.field select,.field textarea{background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:9px 11px;outline:0}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.toast{position:fixed;right:22px;bottom:22px;background:#1d2027;border:1px solid var(--line2);border-radius:12px;padding:12px 16px;font-weight:600;
+  box-shadow:var(--sh);transform:translateY(20px);opacity:0;transition:.25s;z-index:60;display:flex;gap:10px;align-items:center}
+.toast.on{transform:none;opacity:1}
+
+/* ---------- responsive ---------- */
+@media (max-width:1280px){.inbox{grid-template-columns:290px minmax(0,1fr)}.detail{display:none}.charts{grid-template-columns:1fr 1fr}.charts>:first-child{grid-column:1/-1}}
+@media (max-width:980px){
+  .app{grid-template-columns:1fr}.side{position:fixed;bottom:0;left:0;right:0;z-index:40;flex-direction:row;padding:6px;border-right:0;border-top:1px solid var(--line);justify-content:space-around}
+  .brand,.navlbl,.sidefoot,.nav .cnt{display:none}.nav{flex-direction:column;gap:3px;font-size:10.5px;padding:6px 8px}.nav.on::before{display:none}
+  .main{height:auto;min-height:100vh}.content{padding:16px 14px 90px}.kpis{grid-template-columns:1fr 1fr}.charts,.two{grid-template-columns:1fr}
+  .inbox{grid-template-columns:1fr;height:auto}.convs{max-height:300px;border-right:0;border-bottom:1px solid var(--line)}.thread{min-height:480px}
+  .top{padding:0 14px}.top .sub,.top .btn span{display:none}.hw{grid-template-columns:1fr}.clip{max-width:160px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<!-- ================= SIDEBAR ================= -->
+<aside class="side" id="sidebar">
+  <div class="brand">
+    <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6 4 4 6-8"/><path d="M14 7h6v6"/></svg></div>
+    <div><b>LeadFlow AI</b><small>Commerce agent · AMD</small></div>
+  </div>
+  <div class="navlbl">Workspace</div>
+  <a class="nav" href="#inbox" data-view="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>Inbox<span class="cnt" id="c-inbox">0</span></a>
+  <a class="nav" href="#leads" data-view="leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Leads<span class="cnt" id="c-leads">0</span></a>
+  <a class="nav" href="#orders" data-view="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>Orders<span class="cnt" id="c-orders">0</span></a>
+  <a class="nav" href="#analytics" data-view="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Analytics</a>
+  <div class="navlbl">Infrastructure</div>
+  <a class="nav" href="#model" data-view="model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>AMD · Model</a>
+  <div class="sidefoot">
+    <div class="t"><span class="dot" id="side-dot"></span><span id="side-backend">Backend…</span></div>
+    <p id="side-hw">Detecting inference backend</p>
+  </div>
+</aside>
+
+<!-- ================= MAIN ================= -->
+<div class="main">
+  <header class="top">
+    <div><h1 id="title">Inbox</h1><div class="sub" id="subtitle">Customer messages, analyzed by the agent</div></div>
+    <div class="sp"></div>
+    <span class="badge" id="model-badge" title="Inference backend reported by /version"><span class="dot" id="badge-dot"></span><span id="badge-txt">…</span><span class="m" id="badge-model"></span></span>
+    <button class="btn" id="btn-demo" onclick="loadDemo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg><span>Load demo</span></button>
+    <button class="btn pri" onclick="openModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>New message</span></button>
+  </header>
+
+  <main class="content">
+    <!-- ---------- INBOX ---------- -->
+    <section class="view" id="v-inbox">
+      <div class="card inbox">
+        <div class="convs">
+          <div class="hd">
+            <div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" placeholder="Search customers or messages" oninput="renderInbox()"></div>
+            <div class="filters" id="filters"></div>
+          </div>
+          <div class="clist" id="clist"></div>
+        </div>
+        <div class="thread" id="thread"></div>
+        <div class="detail" id="detail"></div>
+      </div>
+    </section>
+
+    <!-- ---------- LEADS ---------- -->
+    <section class="view" id="v-leads">
+      <div class="grid kpis" id="kpis-leads"></div>
+      <div class="card">
+        <div class="hd"><h3>Ranked leads</h3><span class="hint">Hybrid score = deterministic rules + model features (explainable)</span><div class="sp"></div>
+          <div class="filters" id="lfilters" style="margin:0"></div></div>
+        <div class="bd" style="padding:8px 4px 4px;overflow:auto">
+          <table><thead><tr><th>Customer</th><th>Score</th><th>Status</th><th>Intent</th><th>Language</th><th>Channel</th><th>Message</th></tr></thead><tbody id="ltable"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- ORDERS ---------- -->
+    <section class="view" id="v-orders">
+      <div class="grid kpis" id="kpis-orders"></div>
+      <div class="grid ocards" id="ocards"></div>
+    </section>
+
+    <!-- ---------- ANALYTICS ---------- -->
+    <section class="view" id="v-analytics">
+      <div class="grid kpis" id="kpis-an"></div>
+      <div class="grid charts">
+        <div class="card chart"><div class="hd"><h3>Lead score distribution</h3><span class="hint">hybrid score buckets</span></div><div class="bd" id="ch-score"></div></div>
+        <div class="card chart"><div class="hd"><h3>Messages by language</h3></div><div class="bd" id="ch-lang"></div></div>
+        <div class="card chart"><div class="hd"><h3>Intent mix</h3></div><div class="bd" id="ch-intent"></div></div>
+      </div>
+      <div class="grid two">
+        <div class="card"><div class="hd"><h3>Channel breakdown</h3><span class="hint">where leads come from</span></div><div class="bd" id="ch-src"></div></div>
+        <div class="card"><div class="hd"><h3>Agent next actions</h3></div><div class="bd" id="ch-act"></div></div>
+      </div>
+    </section>
+
+    <!-- ---------- MODEL ---------- -->
+    <section class="view" id="v-model">
+      <div class="grid two" style="margin-bottom:16px">
+        <div class="card"><div class="hd"><h3>Inference backend</h3><span class="hint">live from <span class="mono">/version</span> and <span class="mono">/metrics</span></span></div>
+          <div class="bd"><div class="hw" id="hwcards"></div><div id="mode-note" style="margin-top:14px"></div></div></div>
+        <div class="card"><div class="hd"><h3>Session telemetry</h3><span class="hint">this server process</span></div><div class="bd" id="telemetry"></div></div>
+      </div>
+      <div class="card"><div class="hd"><h3>AMD GPU benchmarks</h3><span class="hint">filled in only from real runs of <span class="mono">scripts/benchmark.py</span></span></div>
+        <div class="bd" style="padding:8px 4px 4px;overflow:auto"><table><thead><tr><th>Target</th><th>Model</th><th>Throughput</th><th>p50 latency</th><th>Status</th></tr></thead><tbody id="bench"></tbody></table></div></div>
+    </section>
+  </main>
+</div>
+</div>
+
+<!-- ================= MODAL ================= -->
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="card">
+    <h3>Simulate incoming message</h3>
+    <div class="muted">Sent to <span class="mono">POST /leads</span> and analyzed by the agent.</div>
+    <div class="f2">
+      <div class="field"><label>Name</label><input id="f-name" value="Dilnoza"></div>
+      <div class="field"><label>Channel</label><select id="f-source"><option>telegram</option><option>whatsapp</option><option>web</option><option>email</option><option>phone</option><option>referral</option></select></div>
+    </div>
+    <div class="f2">
+      <div class="field"><label>Phone</label><input id="f-phone" value="+998 90 123 45 67"></div>
+      <div class="field"><label>Email</label><input id="f-email" placeholder="optional"></div>
+    </div>
+    <div class="field"><label>Message</label><textarea id="f-msg" rows="4">Salom! 3 dona kurtka kerak, bugun olaman. Narxi qancha? Budjet 1500000 so'm</textarea></div>
+    <div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="sendForm()">Analyze with agent</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
 <script>
 const $=id=>document.getElementById(id);
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-async function send(body){
- body=body||{name:$('name').value,source:$('source').value,phone:$('phone').value||null,email:$('email').value||null,message:$('message').value};
- const r=await fetch('/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
- if(!r.ok) alert(await r.text()); await refresh();
-}
-async function demo(){
- for(const l of [
-  {name:'Ivan',source:'whatsapp',phone:'+998901112233',message:'Хочу заказать 2 шт кроссовки 42 размера, срочно, бюджет 900000 сум'},
-  {name:'Sarah',source:'web',email:'sarah@example.com',message:'What is the price for 50 units hoodies with logo?'},
-  {name:'Bot',source:'web',email:'win@spam.io',message:'Crypto bonus casino click here'},
-  {name:'Aziz',source:'telegram',phone:'+998935556677',message:'Kurtka brak keldi, pulni qaytaring'}]) await send(l);
-}
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S={leads:[],orders:[],metrics:null,version:null,sel:null,filter:'all',lfilter:'all'};
+const VIEWS={inbox:['Inbox','Customer messages, analyzed by the agent'],leads:['Leads','Ranked by hybrid score'],
+  orders:['Orders','Order drafts created by the agent from chat'],analytics:['Analytics','Computed live from current leads'],
+  model:['AMD · Model','Inference backend, telemetry and benchmarks']};
+const LANG={ru:'Russian',uz:'Uzbek',en:'English'};
+const COLORS={hot:'#ff4d4f',warm:'#f5a524',cold:'#4ea8ff',escalated:'#b57bff',spam:'#6b7180'};
+const ICON={
+ telegram:'<svg viewBox="0 0 24 24" fill="#2aabee"><path d="M21.9 4.3l-3.2 15.1c-.2 1-.9 1.3-1.7.8l-4.8-3.6-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.9 8.9-8c.4-.3-.1-.5-.6-.2L6.5 13.1l-4.7-1.5c-1-.3-1-1 .2-1.5L20.6 3c.9-.3 1.6.2 1.3 1.3z"/></svg>',
+ whatsapp:'<svg viewBox="0 0 24 24" fill="#25d366"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.7 1.2 1.6 2 1.1 1 2 1.3 2.3 1.4.3.1.4.1.6-.1l.8-1c.2-.3.4-.2.6-.1l2 1c.3.1.4.2.5.3.1.2.1.6-.1 1.2z"/></svg>',
+ web:'<svg viewBox="0 0 24 24" fill="none" stroke="#9aa3b2" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg>',
+ email:'<svg viewBox="0 0 24 24" fill="none" stroke="#9aa3b2" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>',
+ phone:'<svg viewBox="0 0 24 24" fill="none" stroke="#9aa3b2" stroke-width="2"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.4 1.8.7 2.7a2 2 0 01-.5 2.1L8 9.8a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.7.7a2 2 0 011.7 2z"/></svg>',
+ referral:'<svg viewBox="0 0 24 24" fill="none" stroke="#9aa3b2" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>',
+ other:'<svg viewBox="0 0 24 24" fill="none" stroke="#9aa3b2" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>'};
+const spark='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg>';
+
+/* ---------- helpers ---------- */
+const score=l=>l.agent?l.agent.hybrid_score:l.score;
+function status(l){const a=l.agent&&l.agent.analysis;
+  if(a&&a.intent==='spam')return'spam';
+  if(a&&(a.intent==='complaint'||a.next_action==='escalate'))return'escalated';
+  const s=score(l);return s>=70?'hot':s>=45?'warm':'cold';}
+const pill=s=>`<span class="pill p-${s}">${s}</span>`;
+const flag=c=>c?`<span class="flag f-${esc(c)}"><i></i>${esc(String(c).toUpperCase())}</span>`:'<span class="muted">—</span>';
+const src=s=>`<span class="src">${ICON[s]||ICON.other}${esc(s)}</span>`;
+function hue(n){let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))%360;return h}
+const initials=n=>String(n).trim().split(/\s+/).map(p=>p[0]).join('').slice(0,2).toUpperCase()||'?';
+const av=(n,sm)=>`<div class="av${sm?' sm':''}" style="--h:${hue(n)}">${esc(initials(n))}</div>`;
+const bar=(v,c)=>`<div class="bar"><span style="width:${Math.max(2,v)}%;--c:${c}"></span></div>`;
+const scoreColor=s=>s>=70?COLORS.hot:s>=45?COLORS.warm:COLORS.cold;
+const fmtTime=iso=>{try{return new Date(iso).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}catch{return''}};
+const fmtNum=n=>Number(n).toLocaleString('en-US');
+const money=(b,c)=>b?`${fmtNum(b)} ${esc(c||'')}`:'—';
+const contact=l=>esc(l.phone||l.email||'');
+function count(arr,key){const m={};for(const x of arr){const k=key(x);if(k==null)continue;m[k]=(m[k]||0)+1}return m}
+function toast(t){const el=$('toast');el.innerHTML=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),2400)}
+function kpi(label,value,sub,icon,glow){return `<div class="card kpi" style="--glow:${glow||'rgba(237,28,36,.16)'}"><div class="l"><i>${icon}</i>${label}</div><div class="v">${value}</div><div class="s">${sub}</div></div>`}
+const I={users:'<svg viewBox="0 0 24 24" fill="none" stroke="#ff6b70" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>',
+ fire:'<svg viewBox="0 0 24 24" fill="none" stroke="#ff4d4f" stroke-width="2"><path d="M12 22c4 0 7-3 7-7 0-5-5-8-5-13-3 2-5 5-5 8-1-1-2-2-2-4-2 2-2 5-2 9 0 4 3 7 7 7z"/></svg>',
+ bag:'<svg viewBox="0 0 24 24" fill="none" stroke="#2fd27c" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18"/></svg>',
+ gauge:'<svg viewBox="0 0 24 24" fill="none" stroke="#4ea8ff" stroke-width="2"><path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1117.4 0"/></svg>',
+ alert:'<svg viewBox="0 0 24 24" fill="none" stroke="#b57bff" stroke-width="2"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h0"/></svg>',
+ globe:'<svg viewBox="0 0 24 24" fill="none" stroke="#f5a524" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg>',
+ chip:'<svg viewBox="0 0 24 24" fill="none" stroke="#ff6b70" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>'};
+
+/* ---------- data ---------- */
+async function api(path,opt){const r=await fetch(path,opt);if(!r.ok)throw new Error(await r.text());return r.json()}
 async function refresh(){
- const d=await (await fetch('/leads')).json();
- $('rows').innerHTML=d.leads.map(l=>{const a=l.agent;const x=a?a.analysis:{};
-  return `<tr><td class="score">${a?a.hybrid_score:l.score}</td>
-  <td><b>${esc(l.name)}</b> <span class="tag">${esc(l.source)}</span><br><span class="muted">${esc(l.message)}</span></td>
-  <td>${a?`<span class="tag">${esc(x.intent)}</span><span class="tag">${esc(x.language)}</span><span class="tag">${esc(x.next_action)}</span><br>
-   ${x.products.map(p=>`<span class="tag">${esc(p.qty??'?')}× ${esc(p.name)}</span>`).join('')}
-   <div class="muted">${a.reasons.map(esc).join(' · ')}</div>
-   <div class="muted">${esc(a.llm.model)} @ ${esc(a.llm.backend)} · ${a.llm.latency_ms} ms · ${a.llm.tokens_per_sec} tok/s${a.llm.fallback_reason?' · FALLBACK':''}</div>`:'—'}</td>
-  <td>${a?esc(x.reply):''}</td></tr>`}).join('');
- const o=await (await fetch('/orders')).json();
- $('orders').innerHTML=o.count?o.orders.map(x=>`#${x.id} lead ${x.lead_id}: ${x.items.map(i=>esc((i.qty??'?')+'× '+i.name)).join(', ')} ${x.budget?'· '+x.budget+' '+esc(x.currency):''}`).join('<br>'):'none';
- const m=await (await fetch('/metrics')).json();
- $('hw').textContent='· '+m.llm.model+' on '+(m.llm.backend==='mock'?'offline mock':m.llm.hardware);
- $('metrics').innerHTML=`backend: <b>${esc(m.llm.backend)}</b><br>model: ${esc(m.llm.model)}<br>hardware: ${esc(m.llm.hardware)}<br>calls: ${m.calls} · fallbacks: ${m.fallbacks}<br>avg latency: ${m.avg_latency_ms} ms<br>avg throughput: ${m.avg_tokens_per_sec} tok/s`;
+  const [l,o,m,v]=await Promise.all([api('/leads'),api('/orders'),api('/metrics'),api('/version')]);
+  S.leads=l.leads;S.orders=o.orders;S.metrics=m;S.version=v;
+  if(!S.sel&&S.leads.length)S.sel=S.leads[0].id;
+  render();
 }
-refresh();
-</script></body></html>
+async function post(body){return api('/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}
+const DEMO=[
+ {name:'Dilnoza Karimova',source:'telegram',phone:'+998 90 123 45 67',message:"Salom! 3 dona kurtka kerak, bugun olaman. Narxi qancha? Budjet 1500000 so'm"},
+ {name:'Ivan Petrov',source:'whatsapp',phone:'+998901112233',message:'Хочу заказать 2 шт кроссовки 42 размера, срочно, бюджет 900000 сум'},
+ {name:'Sarah Miller',source:'web',email:'sarah@example.com',message:'What is the price for 50 units hoodies with logo?'},
+ {name:'Aziz Tursunov',source:'telegram',phone:'+998935556677',message:'Kurtka brak keldi, pulni qaytaring'},
+ {name:'Olga Smirnova',source:'email',email:'olga.s@example.ru',message:'Сколько стоит доставка в Самарканд? Нужна цена на 10 футболок'},
+ {name:'Bekzod Aliev',source:'referral',phone:'+998977778899',message:'Buyurtma bermoqchiman: 5 dona futbolka, rahmat'},
+ {name:'Promo Bot',source:'web',email:'win@spam.io',message:'Crypto bonus casino click here'}];
+async function loadDemo(){
+  const b=$('btn-demo');b.disabled=true;
+  try{for(const d of DEMO)await post(d);await refresh();toast(`${spark} ${DEMO.length} demo messages analyzed`)}
+  catch(e){toast('Error: '+esc(e.message))}finally{b.disabled=false}
+}
+function openModal(){$('modal').classList.add('on');setTimeout(()=>$('f-msg').focus(),50)}
+function closeModal(){$('modal').classList.remove('on')}
+async function sendForm(){
+  const body={name:$('f-name').value,source:$('f-source').value,phone:$('f-phone').value||null,email:$('f-email').value||null,message:$('f-msg').value};
+  try{const r=await post(body);S.sel=r.lead.id;closeModal();await refresh();go('inbox');toast(`${spark} Analyzed · score ${score(r.lead)}`)}
+  catch(e){toast('Error: '+esc(e.message.slice(0,140)))}
+}
+async function reanalyze(id){await api(`/leads/${id}/analyze`,{method:'POST'});await refresh();toast(`${spark} Re-analyzed`)}
+
+/* ---------- routing ---------- */
+function go(v){if(location.hash!=='#'+v)location.hash=v;else route()}
+function route(){
+  const [v,qs]=(location.hash.slice(1)||'inbox').split('?');const view=VIEWS[v]?v:'inbox';
+  const deep=Number(new URLSearchParams(qs||'').get('lead'));if(deep){S.sel=deep;if(S.leads.length)renderInbox()}
+  document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+view));
+  document.querySelectorAll('.nav').forEach(e=>e.classList.toggle('on',e.dataset.view===view));
+  $('title').textContent=VIEWS[view][0];$('subtitle').textContent=VIEWS[view][1];
+  document.title=`${VIEWS[view][0]} · LeadFlow AI`;
+}
+window.addEventListener('hashchange',route);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+/* ---------- render ---------- */
+function render(){renderBackend();renderCounts();renderInbox();renderLeads();renderOrders();renderAnalytics();renderModel()}
+function backendState(){
+  const info=(S.version&&S.version.llm)||{};const m=S.metrics||{};
+  if(info.backend==='mock')return{cls:'',txt:'Offline mock',model:'rules-v1',long:'Deterministic rules — no GPU used'};
+  const fb=m.fallbacks>0;
+  const label=info.provider==='amd-token-factory'?'AMD Token Factory':(/MI300X/i.test(info.hardware||'')?'vLLM · MI300X':'vLLM');
+  return{cls:fb?'fb':'live',txt:label+(fb?' · fallbacks':''),model:info.model||'',long:info.hardware||''};
+}
+function renderBackend(){
+  const b=backendState();
+  $('badge-dot').className='dot '+b.cls;$('badge-txt').textContent=b.txt;$('badge-model').textContent=b.model;
+  $('side-dot').className='dot '+b.cls;$('side-backend').textContent=b.txt;$('side-hw').textContent=b.long;
+}
+function renderCounts(){$('c-inbox').textContent=S.leads.length;$('c-leads').textContent=S.leads.filter(l=>status(l)==='hot').length+' hot';$('c-orders').textContent=S.orders.length}
+
+const FILTERS=['all','hot','warm','cold','escalated','spam'];
+function filterChips(id,cur,fn){$(id).innerHTML=FILTERS.map(f=>{const n=f==='all'?S.leads.length:S.leads.filter(l=>status(l)===f).length;
+  return `<button class="chip${cur===f?' on':''}" onclick="${fn}('${f}')">${f[0].toUpperCase()+f.slice(1)} <span style="opacity:.6">${n}</span></button>`}).join('')}
+function setFilter(f){S.filter=f;renderInbox()}
+function setLFilter(f){S.lfilter=f;renderLeads()}
+function select(id){S.sel=id;renderInbox();go('inbox')}
+
+function emptyState(t,s){return `<div class="empty"><b>${t}</b>${s}<div style="margin-top:14px"><button class="btn pri" onclick="loadDemo()">Load demo messages</button></div></div>`}
+
+function renderInbox(){
+  filterChips('filters',S.filter,'setFilter');
+  const q=($('q').value||'').toLowerCase();
+  const list=S.leads.filter(l=>(S.filter==='all'||status(l)===S.filter)&&(!q||(l.name+' '+(l.message||'')).toLowerCase().includes(q)));
+  $('clist').innerHTML=list.length?list.map(l=>{const a=l.agent&&l.agent.analysis;return `
+    <div class="conv${l.id===S.sel?' on':''}" onclick="select(${l.id})">${av(l.name)}
+      <div class="meta"><div class="r1"><b>${esc(l.name)}</b><time>${fmtTime(l.created_at)}</time></div>
+      <div class="pv">${esc(l.message)}</div>
+      <div class="r3">${pill(status(l))}${a?flag(a.language):''}<span class="sp"></span>${src(l.source)}</div></div></div>`}).join('')
+    :`<div class="empty"><b>No conversations</b>${S.leads.length?'Nothing matches this filter.':'Incoming messages will appear here.'}</div>`;
+  const l=S.leads.find(x=>x.id===S.sel);
+  if(!l){$('thread').innerHTML=emptyState('Inbox is empty','Send a message or load the RU / UZ / EN demo set.');$('detail').innerHTML='';return}
+  const ag=l.agent,a=ag&&ag.analysis;
+  const llm=ag?ag.llm:null;
+  const engine=llm?`${esc(llm.model)} · ${llm.backend==='mock'?'mock':esc(llm.hardware||llm.backend)}`:'';
+  $('thread').innerHTML=`
+    <div class="thd">${av(l.name)}<div style="min-width:0"><div class="n">${esc(l.name)}</div><div class="c">${src(l.source)} · ${contact(l)}${l.duplicates?` · ${l.duplicates} repeat msg`:''}</div></div>
+      <span class="sp"></span>${a?flag(a.language):''}${pill(status(l))}</div>
+    <div class="msgs">
+      <div class="day">Today</div>
+      <div class="msg in"><div class="b">${esc(l.message)}</div><div class="ft">${esc(l.name.split(' ')[0])} · ${fmtTime(l.created_at)} · via ${esc(l.source)}</div></div>
+      ${ag?`<div class="sys">${spark}<span>Agent: intent <b>${esc(a.intent)}</b> · urgency <b>${esc(a.urgency)}</b> · next action <b>${esc(a.next_action.replace(/_/g,' '))}</b>${ag.order_draft?` · order draft <b>#${ag.order_draft.id}</b> created`:''}</span></div>
+      ${a.reply?`<div class="msg out"><div class="b">${esc(a.reply)}</div><div class="ft">${spark.replace('<svg','<svg width="11" height="11"')} AI draft reply · ${engine}${llm.fallback_reason?' · <span style="color:var(--hot)">fallback</span>':''}</div></div>`:''}`
+      :'<div class="sys">Not analyzed yet</div>'}
+    </div>
+    <div class="compose"><textarea rows="1" placeholder="Edit the AI draft before sending to ${esc(l.name.split(' ')[0])}… (preview only — outbound channels connect via n8n)">${a?esc(a.reply):''}</textarea>
+      <button class="btn" onclick="reanalyze(${l.id})" title="POST /leads/${l.id}/analyze">${spark}Re-analyze</button></div>`;
+  const s=score(l),st=status(l);const od=ag&&ag.order_draft;
+  $('detail').innerHTML=`
+    <h4>Lead score</h4>
+    <div class="bigscore"><div class="ring" style="--p:${s};--c:${COLORS[st]}"><div>${s}</div></div>
+      <div class="stack" style="gap:6px">${pill(st)}<span class="muted" style="font-size:12px">rule score ${l.score} → hybrid ${s}</span></div></div>
+    ${ag?`<h4>Why this score</h4><ul class="reasons">${ag.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`:''}
+    ${a?`<h4>Extracted</h4><div class="kv">
+      <span>Intent</span><span>${esc(a.intent)}</span><span>Language</span><span>${flag(a.language)} <span class="muted">${LANG[a.language]||''}</span></span>
+      <span>Urgency</span><span>${esc(a.urgency)}</span><span>Budget</span><span>${money(a.budget,a.currency)}</span>
+      <span>Products</span><span>${a.products.length?a.products.map(p=>`<span class="tag">${p.qty??'?'}× ${esc(p.name)}</span>`).join(' '):'—'}</span></div>`:''}
+    ${od?`<h4>Order draft</h4>${orderCard(od,l)}`:''}
+    ${llm?`<h4>Inference</h4><div class="kv mono"><span>model</span><span>${esc(llm.model)}</span><span>backend</span><span>${esc(llm.backend)}</span>
+      <span>latency</span><span>${llm.latency_ms} ms${llm.backend==='mock'?' <span class="muted">(mock)</span>':''}</span>
+      ${llm.fallback_reason?`<span>fallback</span><span style="color:var(--hot)">${esc(llm.fallback_reason)}</span>`:''}</div>`:''}`;
+}
+function orderCard(o,l){
+  return `<div class="order"><div class="oh"><b>ORD-${String(o.id).padStart(4,'0')}</b>${l?`<span class="muted" style="font-size:12px">· ${esc(l.name)}</span>`:''}<span class="status">${esc(o.status)}</span></div>
+    ${o.items.map(i=>`<div class="it"><span>${esc(i.name)}</span><span class="muted">× ${i.qty??'?'}</span></div>`).join('')}
+    <div class="tot"><span>Customer budget</span><span>${money(o.budget,o.currency)}</span></div></div>`;
+}
+
+function renderLeads(){
+  const L=S.leads,n=L.length;
+  const hot=L.filter(l=>status(l)==='hot').length,esc_=L.filter(l=>status(l)==='escalated').length;
+  const avg=n?Math.round(L.reduce((t,l)=>t+score(l),0)/n):0;
+  $('kpis-leads').innerHTML=kpi('Total leads',n,`${L.filter(l=>l.duplicates).length} with repeat messages`,I.users)
+    +kpi('Hot leads',hot,n?`${Math.round(hot/n*100)}% of all leads`:'—',I.fire,'rgba(255,77,79,.18)')
+    +kpi('Average score',avg,'hybrid score, 0–100',I.gauge,'rgba(78,168,255,.16)')
+    +kpi('Escalations',esc_,'complaints routed to a manager',I.alert,'rgba(181,123,255,.16)');
+  filterChips('lfilters',S.lfilter,'setLFilter');
+  const list=L.filter(l=>S.lfilter==='all'||status(l)===S.lfilter);
+  $('ltable').innerHTML=list.length?list.map(l=>{const a=l.agent&&l.agent.analysis,s=score(l);return `
+    <tr onclick="select(${l.id})"><td><div class="who">${av(l.name,1)}<div style="min-width:0"><div class="n">${esc(l.name)}</div><div class="c">${contact(l)}</div></div></div></td>
+    <td><div class="scorecell"><b>${s}</b>${bar(s,scoreColor(s))}</div></td><td>${pill(status(l))}</td>
+    <td>${a?`<span class="tag">${esc(a.intent)}</span>`:'—'}</td><td>${a?flag(a.language):'—'}</td><td>${src(l.source)}</td>
+    <td><div class="clip">${esc(l.message)}</div></td></tr>`}).join('')
+    :`<tr><td colspan="7">${n?'<div class="empty">No leads with this status.</div>':emptyState('No leads yet','Leads appear as soon as customers write.')}</td></tr>`;
+}
+
+function renderOrders(){
+  const O=S.orders;const byLead=Object.fromEntries(S.leads.map(l=>[l.id,l]));
+  const units=O.reduce((t,o)=>t+o.items.reduce((u,i)=>u+(i.qty||0),0),0);
+  const bud=count(O.filter(o=>o.budget),o=>o.currency);const budSum={};O.forEach(o=>{if(o.budget)budSum[o.currency||'']=(budSum[o.currency||'']||0)+o.budget});
+  const conv=S.leads.length?Math.round(O.length/S.leads.length*100):0;
+  $('kpis-orders').innerHTML=kpi('Order drafts',O.length,'awaiting manager confirmation',I.bag,'rgba(47,210,124,.16)')
+    +kpi('Units requested',units,'sum of extracted quantities',I.chip)
+    +kpi('Stated budgets',Object.keys(budSum).length?Object.entries(budSum).map(([c,v])=>`<span style="font-size:20px">${fmtNum(v)} <span class="muted" style="font-size:13px">${esc(c)}</span></span>`).join('<br>'):'—',`${Object.values(bud).reduce((a,b)=>a+b,0)} draft(s) with budget`,I.gauge,'rgba(78,168,255,.16)')
+    +kpi('Chat → order',conv+'%','leads that became a draft',I.fire,'rgba(255,77,79,.16)');
+  $('ocards').innerHTML=O.length?O.map(o=>{const l=byLead[o.lead_id];const a=l&&l.agent&&l.agent.analysis;return `
+    <div class="card" style="padding:16px;cursor:pointer" onclick="select(${o.lead_id})">
+      <div class="row" style="margin-bottom:12px">${l?av(l.name,1):''}<div style="min-width:0"><div style="font-weight:600">${esc(l?l.name:'Lead '+o.lead_id)}</div>
+      <div class="muted" style="font-size:12px">${l?src(l.source):''}</div></div><span class="sp" style="flex:1"></span>${a?flag(a.language):''}</div>
+      ${orderCard(o)}
+      ${l?`<div class="muted" style="font-size:12px;margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">“${esc(l.message)}”</div>`:''}</div>`}).join('')
+    :`<div class="card">${emptyState('No order drafts yet','The agent drafts an order when a customer clearly wants to buy.')}</div>`;
+}
+
+/* ---------- inline SVG charts (no external deps) ---------- */
+function barChart(buckets){
+  const W=520,H=210,P={l:30,r:10,t:14,b:30};const max=Math.max(1,...buckets.map(b=>b.v));
+  const bw=(W-P.l-P.r)/buckets.length;let g='';
+  for(let i=0;i<=max;i+=Math.max(1,Math.ceil(max/4))){const y=H-P.b-(i/max)*(H-P.t-P.b);
+    g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}" stroke="#23262e"/><text x="${P.l-8}" y="${y+4}" fill="#6b7180" font-size="11" text-anchor="end">${i}</text>`}
+  buckets.forEach((b,i)=>{const h=(b.v/max)*(H-P.t-P.b),x=P.l+i*bw+bw*.18,y=H-P.b-h,w=bw*.64;
+    g+=`<rect x="${x}" y="${H-P.b}" width="${w}" height="0" rx="6" fill="${b.c}"><animate attributeName="height" to="${h}" dur=".6s" fill="freeze"/><animate attributeName="y" to="${y}" dur=".6s" fill="freeze"/></rect>`
+     +`<text x="${x+w/2}" y="${H-10}" fill="#a4a9b4" font-size="11.5" text-anchor="middle">${b.l}</text>`
+     +(b.v?`<text x="${x+w/2}" y="${y-6}" fill="#eceef2" font-size="12" font-weight="700" text-anchor="middle">${b.v}</text>`:'')});
+  return `<svg viewBox="0 0 ${W} ${H}" font-family="Inter,sans-serif">${g}</svg>`;
+}
+function donut(items){
+  const tot=items.reduce((t,i)=>t+i.v,0);const R=52,C=2*Math.PI*R;let off=0,g='';
+  if(!tot)return '<div class="empty" style="padding:20px">No data yet</div>';
+  items.forEach(i=>{if(!i.v)return;const len=i.v/tot*C;g+=`<circle r="${R}" cx="70" cy="70" fill="none" stroke="${i.c}" stroke-width="18" stroke-dasharray="${len-2} ${C-len+2}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"/>`;off+=len});
+  return `<div class="donutwrap"><svg viewBox="0 0 140 140" style="width:140px;flex:none" font-family="Inter,sans-serif"><circle r="${R}" cx="70" cy="70" fill="none" stroke="#1d2027" stroke-width="18"/>${g}
+    <text x="70" y="68" text-anchor="middle" fill="#eceef2" font-size="24" font-weight="750">${tot}</text><text x="70" y="86" text-anchor="middle" fill="#6b7180" font-size="11">messages</text></svg>
+    <div class="legend" style="flex:1">${items.map(i=>`<div><i style="background:${i.c}"></i>${i.l}<b>${i.v}</b></div>`).join('')}</div></div>`;
+}
+function hbars(items){const max=Math.max(1,...items.map(i=>i.v));
+  return items.length?`<div class="stack">${items.map(i=>`<div><div class="row" style="justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span>${i.l}</span><b>${i.v}</b></div>${bar(i.v/max*100,i.c)}</div>`).join('')}</div>`
+  :'<div class="empty" style="padding:20px">No data yet</div>'}
+function renderAnalytics(){
+  const L=S.leads,A=L.filter(l=>l.agent).map(l=>l.agent.analysis);
+  const langs=count(A,a=>a.language),intents=count(A,a=>a.intent),srcs=count(L,l=>l.source),acts=count(A,a=>a.next_action);
+  const m=S.metrics||{};
+  $('kpis-an').innerHTML=kpi('Messages analyzed',m.calls??0,'agent calls this session',I.users)
+    +kpi('Languages detected',Object.keys(langs).length,Object.entries(langs).map(([k,v])=>`${k.toUpperCase()} ${v}`).join(' · ')||'—',I.globe,'rgba(245,165,36,.16)')
+    +kpi('Order intent',intents.order||0,`${intents.quote||0} price requests`,I.bag,'rgba(47,210,124,.16)')
+    +kpi('Model fallbacks',m.fallbacks??0,'remote → rules safety net',I.alert,'rgba(181,123,255,.16)');
+  const B=[[0,20,'0–19'],[20,40,'20–39'],[40,60,'40–59'],[60,80,'60–79'],[80,101,'80–100']];
+  $('ch-score').innerHTML=barChart(B.map(([lo,hi,l])=>({l,v:L.filter(x=>score(x)>=lo&&score(x)<hi).length,c:lo>=80?COLORS.hot:lo>=60?'#ff7a45':lo>=40?COLORS.warm:COLORS.cold})));
+  $('ch-lang').innerHTML=donut([{l:flag('ru')+' Russian',v:langs.ru||0,c:'#ed1c24'},{l:flag('uz')+' Uzbek',v:langs.uz||0,c:'#1eb5e6'},{l:flag('en')+' English',v:langs.en||0,c:'#f5a524'}]);
+  const IC={order:'#2fd27c',quote:'#4ea8ff',question:'#f5a524',complaint:'#b57bff',spam:'#6b7180',other:'#a4a9b4'};
+  $('ch-intent').innerHTML=hbars(Object.entries(intents).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v,c:IC[k]||'#888'})));
+  $('ch-src').innerHTML=hbars(Object.entries(srcs).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:src(k),v,c:'#ed1c24'})));
+  $('ch-act').innerHTML=hbars(Object.entries(acts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k.replace(/_/g,' '),v,c:'#4ea8ff'})));
+}
+
+function renderModel(){
+  const info=(S.version&&S.version.llm)||{},m=S.metrics||{},b=backendState(),mock=info.backend==='mock';
+  const hwc=(l,v)=>`<div class="card"><div class="l">${l}</div><div class="v">${v}</div></div>`;
+  $('hwcards').innerHTML=hwc('Backend',`<span class="row"><span class="dot ${b.cls}"></span>${esc(b.txt)}</span>`)+hwc('Provider',esc(info.provider||'—'))
+    +hwc('Model',`<span class="mono">${esc(mock?'rules-v1 (offline)':info.model)}</span>`)
+    +hwc('Target hardware',esc(info.hardware||'—'))+hwc('Endpoint',`<span class="mono">${esc(mock?'— (local rules)':info.base_url)}</span>`)
+    +hwc('Fallback to rules',info.fallback?'enabled':'disabled');
+  $('mode-note').innerHTML=mock
+    ?`<div class="sys" style="max-width:none;align-self:auto">${I.alert}<span>Running in <b>offline mock</b> mode: answers come from deterministic rules, not an LLM. Set <span class="mono">AMD_TOKEN_FACTORY_API_KEY</span> (AMD Token Factory) or point <span class="mono">LLM_BASE_URL</span> at vLLM on MI300X to go live — the badge switches automatically.</span></div>`
+    :`<div class="sys" style="max-width:none">${spark}<span>Live model calls via <b>${esc(info.provider)}</b>. ${m.fallbacks?`<b style="color:var(--hot)">${m.fallbacks} call(s) fell back to rules</b> — check connectivity.`:'No fallbacks this session.'}</span></div>`;
+  const row=(k,v,note)=>`<div class="row" style="justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line)"><span class="muted">${k}</span><span><b>${v}</b>${note?` <span class="muted" style="font-size:12px">${note}</span>`:''}</span></div>`;
+  $('telemetry').innerHTML=row('Agent calls',m.calls??0)+row('Completion tokens',fmtNum(m.completion_tokens??0))
+    +row('Avg latency',`${m.avg_latency_ms??0} ms`,mock?'mock — not a benchmark':'')+row('Avg throughput',`${m.avg_tokens_per_sec??0} tok/s`,mock?'mock — not a benchmark':'')
+    +row('Fallbacks',m.fallbacks??0)+`<div class="muted" style="font-size:12px;margin-top:10px">Version ${esc(S.version?S.version.version:'')} · commit <span class="mono">${esc(S.version?S.version.commit:'')}</span></div>`;
+  const pend='<span class="pending">pending — not measured yet</span>';
+  $('bench').innerHTML=`
+    <tr style="cursor:default"><td><b>AMD Instinct MI300X</b><div class="muted" style="font-size:12px">ROCm · vLLM · <span class="mono">deploy/vllm-rocm.sh</span></div></td><td class="mono">Qwen/Qwen2.5-7B-Instruct</td><td>—</td><td>—</td><td>${pend}</td></tr>
+    <tr style="cursor:default"><td><b>AMD Token Factory</b><div class="muted" style="font-size:12px">Radeon cloud GPUs · OpenAI-compatible API</div></td><td class="mono">DeepSeek-V4-Flash</td><td>—</td><td>—</td><td>${pend}</td></tr>
+    <tr style="cursor:default"><td><b>Offline mock</b><div class="muted" style="font-size:12px">CPU rules, used in tests &amp; as fallback</div></td><td class="mono">rules-v1</td><td colspan="2" class="muted">not meaningful (no model)</td><td><span class="tag">baseline only</span></td></tr>`;
+}
+
+route();refresh().catch(e=>toast('Cannot reach API: '+esc(e.message)));
+</script>
+</body>
+</html>

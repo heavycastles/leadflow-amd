@@ -113,7 +113,8 @@ _QUOTE = ("price", "quote", "cost", "цена", "сколько", "стоим", 
 _COMPLAINT = ("broken", "refund", "сломан", "возврат", "жалоб", "brak", "qaytar")
 _SPAM = ("casino", "crypto bonus", "казино", "click here")
 _URGENT = ("urgent", "today", "asap", "срочно", "сегодня", "bugun", "tez")
-_UZ = ("salom", "narx", "qancha", "kerak", "bugun", "olaman", "buyurtma", "rahmat")
+_UZ = ("salom", "narx", "qancha", "kerak", "bugun", "olaman", "buyurtma", "rahmat", "qaytar", "keldi", "pulni",
+       "dona")
 _QTY = re.compile(r"(\d+)\s*(?:шт|pcs|x|dona|штук|units?)?\s+([A-Za-zА-Яа-яЁёʻ'\-]{3,})", re.U)
 _NOT_PRODUCT = {"размера", "размер", "size", "сум", "sum", "som", "руб", "usd", "dollars", "years", "лет",
                 "минут", "minutes", "часов", "hours", "days", "дней"}
