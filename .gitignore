@@ -6,3 +6,10 @@ __pycache__/
 
 # video build scratch
 docs/video-work/
+
+# secrets / keys
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/

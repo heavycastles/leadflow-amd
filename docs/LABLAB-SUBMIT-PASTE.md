@@ -55,9 +55,9 @@ AMD Token Factory, AMD Instinct MI300X, AMD Developer Cloud, ROCm, vLLM, DeepSee
 
 | Field | Value |
 |-------|--------|
-| GitHub repo | **TODO** — `heavycastles/leadflow-amd` (after user «ОК, публикуй»; local: `scripts/publish_github.sh`) |
+| GitHub repo | https://github.com/heavycastles/leadflow-amd |
 | Demo app URL | **TODO** — Render Blueprint from `render.yaml` (after user Render account + deploy OK) |
-| Video URL | **TODO** — upload `docs/demo-v3.mp4` after user review (YouTube/Drive as form requires) |
+| Video URL | **TODO** — upload `docs/demo-v6.mp4` after user review (YouTube/Drive as form requires) |
 | Slides | upload local file `docs/slides.pdf` |
 | Cover image | upload local file `docs/cover.png` |
 
@@ -65,7 +65,7 @@ AMD Token Factory, AMD Instinct MI300X, AMD Developer Cloud, ROCm, vLLM, DeepSee
 
 | Asset | Path |
 |-------|------|
-| Demo video (latest) | `amd-act-iii/docs/demo-v3.mp4` |
+| Demo video (latest) | `amd-act-iii/docs/demo-v6.mp4` |
 | Demo v2 / draft | `amd-act-iii/docs/demo-v2.mp4` |
 | Slides PDF | `amd-act-iii/docs/slides.pdf` |
 | Cover | `amd-act-iii/docs/cover.png` |
@@ -79,7 +79,7 @@ AMD Token Factory, AMD Instinct MI300X, AMD Developer Cloud, ROCm, vLLM, DeepSee
 2. AMD Token Factory key at https://notebooks.amd.com/tokenfactory (no card) → paste/`./scripts/go_live.sh rc-...`.
 3. Approve public GitHub repo `heavycastles/leadflow-amd`.
 4. Approve Render demo deploy; paste live URL into Links.
-5. Review `docs/demo-v3.mp4` (upload for the form if required).
+5. Review `docs/demo-v6.mp4` (upload for the form if required).
 6. Hit Submit on lablab by **18 Oct 2026 18:00 MSK**.
 
 Hackathon page: https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-iii

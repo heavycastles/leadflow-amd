@@ -32,9 +32,9 @@ AI Agents, LLM, E-commerce
 **Track:** Reinvent Commerce
 
 **Links:**
-- GitHub repo: TODO — `heavycastles/leadflow-amd` (use `scripts/publish_github.sh` when `gh` is logged in)
+- GitHub repo: https://github.com/heavycastles/leadflow-amd (public, MIT)
 - Demo app URL: TODO
-- Video: latest draft `docs/demo-v3.mp4` (also `demo-v2.mp4` / `demo-draft.mp4`; needs user review — optionally re-record one live Token Factory call once the key exists; MI300X segment optional; script in `docs/video-script.md`, narration in `docs/video-narration.txt`)
+- Video: latest draft `docs/demo-v6.mp4` (also `demo-v2.mp4` / `demo-draft.mp4`; needs user review — optionally re-record one live Token Factory call once the key exists; MI300X segment optional; script in `docs/video-script.md`, narration in `docs/video-narration.txt`)
 - Slides PDF: `docs/slides.pdf` (local; upload on submit)
 - Cover image: `docs/cover.png` (local; upload on submit)
 - Local CI: `.github/workflows/ci.yml` (pytest on push/PR)
@@ -45,5 +45,5 @@ AI Agents, LLM, E-commerce
 2. Sign up for AMD Token Factory API at [notebooks.amd.com/tokenfactory](https://notebooks.amd.com/tokenfactory) — **no billing / credit card needed** — and run `./scripts/go_live.sh rc-...` (writes `.env` + verifies via `python -m app.llm`; the only setting needed). Per lablab FAQ (2026-10-15): developers do **not** need the $100 credit to participate; the Token Factory API is enough. Optional: claim $100 AMD Developer Cloud credits at [developer.amd.com/ai-developer-program](https://developer.amd.com/ai-developer-program/) only if you want real MI300X benchmarks (login.amd.com).
 3. Approve creating/publishing public GitHub repo `heavycastles/leadflow-amd` (local pack is ready; push when approved).
 4. Approve demo deploy via Render Blueprint (`render.yaml` → free tier, mock LLM) and paste the live URL into Links above.
-5. Review `docs/demo-v3.mp4` (upload to YouTube/Drive for the form if required).
+5. Review `docs/demo-v6.mp4` (upload to YouTube/Drive for the form if required).
 6. Submit on lablab.ai by **Oct 18, 2026 18:00 MSK**.

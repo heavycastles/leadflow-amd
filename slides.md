@@ -128,7 +128,7 @@ Graceful degradation: offline analyzer if the GPU endpoint fails.
 
 **heavycastles**
 
-- GitHub: `heavycastles/leadflow-amd` *(TODO — publish)*
+- GitHub: `github.com/heavycastles/leadflow-amd`
 - Demo URL: *(TODO)*
 - Video · slides PDF · cover: see `docs/`
 
