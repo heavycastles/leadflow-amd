@@ -79,11 +79,11 @@ Per lablab ACT III FAQ (2026-10-15): the event is hosted on [notebooks.amd.com/t
 | Default model | `DeepSeek-V4-Flash` — override with `AMD_TOKEN_FACTORY_MODEL` (or `LLM_MODEL`), e.g. `DeepSeek-V4.1-Flash`, `GLM-5.3-Flash`, `Qwen3.8-27B` |
 
 ```bash
-cp .env.example .env
-# edit .env: AMD_TOKEN_FACTORY_API_KEY=rc-...      <- the only required line
-python -m app.llm      # live check: lists models, confirms the model id, runs one RU/UZ sample (key never printed)
-python serve.py        # dashboard /metrics now shows backend=openai, provider=amd-token-factory
+./scripts/go_live.sh rc-YOUR_KEY   # writes .env, runs python -m app.llm (never prints the key)
+# optional: ./scripts/go_live.sh rc-YOUR_KEY --demo   # also serve.py + scripts/demo.sh
+python serve.py                    # dashboard /metrics → backend=openai, provider=amd-token-factory
 ```
+Manual equivalent: `cp .env.example .env`, set `AMD_TOKEN_FACTORY_API_KEY=rc-...`, then `python -m app.llm`.
 Or without a file: `AMD_TOKEN_FACTORY_API_KEY=rc-... python serve.py`.
 Rules: an explicit `LLM_BACKEND=mock` still forces the offline mock; explicit `LLM_BASE_URL` / `LLM_MODEL` /
 `LLM_API_KEY` win over the Token Factory defaults. If a model rejects `response_format`, set `LLM_JSON_MODE=0`.
