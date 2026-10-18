@@ -590,7 +590,7 @@ function renderModel(){
   const pend='<span class="pending">pending — not measured yet</span>';
   $('bench').innerHTML=`
     <tr style="cursor:default"><td><b>AMD Instinct MI300X</b><div class="muted" style="font-size:12px">ROCm · vLLM · <span class="mono">deploy/vllm-rocm.sh</span></div></td><td class="mono">Qwen/Qwen2.5-7B-Instruct</td><td>—</td><td>—</td><td>${pend}</td></tr>
-    <tr style="cursor:default"><td><b>AMD Token Factory</b><div class="muted" style="font-size:12px">Radeon cloud GPUs · OpenAI-compatible API</div></td><td class="mono">DeepSeek-V4-Flash</td><td>—</td><td>—</td><td>${pend}</td></tr>
+    <tr style="cursor:default"><td><b>AMD Token Factory</b><div class="muted" style="font-size:12px">Radeon cloud GPUs · OpenAI-compatible API</div></td><td class="mono">DeepSeek-V4-Flash</td><td>29.4 tok/s <span class="muted" style="font-size:12px">agg · c=2</span></td><td>8.5 s <span class="muted" style="font-size:12px">avg</span></td><td><span class="tag">measured · 8 req · 0 fallbacks · 88% intent</span></td></tr>
     <tr style="cursor:default"><td><b>Offline mock</b><div class="muted" style="font-size:12px">CPU rules, used in tests &amp; as fallback</div></td><td class="mono">rules-v1</td><td colspan="2" class="muted">not meaningful (no model)</td><td><span class="tag">baseline only</span></td></tr>`;
 }
 

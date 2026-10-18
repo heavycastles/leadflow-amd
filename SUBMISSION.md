@@ -34,7 +34,8 @@ AI Agents, LLM, E-commerce
 **Links:**
 - GitHub repo: https://github.com/heavycastles/leadflow-amd (public, MIT)
 - Demo app URL: TODO
-- Video: latest draft `docs/demo-v6.mp4` (also `demo-v2.mp4` / `demo-draft.mp4`; needs user review — optionally re-record one live Token Factory call once the key exists; MI300X segment optional; script in `docs/video-script.md`, narration in `docs/video-narration.txt`)
+- Video: https://youtu.be/KZSxeaZ0K50 (`docs/demo-v6.mp4`; script in `docs/video-script.md`, narration in `docs/video-narration.txt`)
+- Live proof (AMD Token Factory, DeepSeek-V4-Flash): `docs/live-proof.md`
 - Slides PDF: `docs/slides.pdf` (local; upload on submit)
 - Cover image: `docs/cover.png` (local; upload on submit)
 - Local CI: `.github/workflows/ci.yml` (pytest on push/PR)

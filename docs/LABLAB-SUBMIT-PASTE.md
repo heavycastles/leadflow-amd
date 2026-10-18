@@ -1,7 +1,7 @@
 # lablab.ai — paste-ready submit pack (AMD ACT III / LeadFlow AI)
 
-Copy fields into the lablab submission form once Discord + public repo + demo review are done.
-**Do not invent live URLs** — leave GitHub / demo as TODO until user approves publish + deploy.
+Copy fields into the lablab submission form. Repo is public, video is on YouTube (unlisted), live AMD Token Factory
+mode is verified (see `docs/live-proof.md`). Show the filled form to the owner before pressing Submit.
 Deadline: **18 Oct 2026, 18:00 MSK**.
 
 Source of truth: `../SUBMISSION.md` (keep in sync if that file changes).
@@ -51,13 +51,13 @@ Reinvent Commerce
 AMD Token Factory, AMD Instinct MI300X, AMD Developer Cloud, ROCm, vLLM, DeepSeek, Qwen2.5, FastAPI, Python, n8n, Telegram, AI Agents, LLM, E-commerce
 ```
 
-## Links (paste when ready — TODOs until user OK)
+## Links
 
 | Field | Value |
 |-------|--------|
 | GitHub repo | https://github.com/heavycastles/leadflow-amd |
-| Demo app URL | **TODO** — Render Blueprint from `render.yaml` (after user Render account + deploy OK) |
-| Video URL | **TODO** — upload `docs/demo-v6.mp4` after user review (YouTube/Drive as form requires) |
+| Demo app URL | optional — leave blank unless a Render deploy from `render.yaml` is approved |
+| Video URL | https://youtu.be/KZSxeaZ0K50 |
 | Slides | upload local file `docs/slides.pdf` |
 | Cover image | upload local file `docs/cover.png` |
 
@@ -72,16 +72,19 @@ AMD Token Factory, AMD Instinct MI300X, AMD Developer Cloud, ROCm, vLLM, DeepSee
 | Video script | `amd-act-iii/docs/video-script.md` |
 | Narration | `amd-act-iii/docs/video-narration.txt` |
 | Mock benchmarks note | `amd-act-iii/docs/benchmarks-mock.md` (NOT live GPU numbers) |
+| Live Token Factory proof | `amd-act-iii/docs/live-proof.md`, `docs/live-proof-*.png`, `docs/live-benchmark-tokenfactory.json` |
 
-## Remaining user checklist (must finish before Submit)
+## Checklist (status 2026-10-18)
 
-1. Connect Discord on lablab.ai for AMD ACT III (unread Action Required from no-reply@lablab.ai, 13 & 15 Oct).
-2. AMD Token Factory key at https://notebooks.amd.com/tokenfactory (no card) → paste/`./scripts/go_live.sh rc-...`.
-3. Approve public GitHub repo `heavycastles/leadflow-amd`.
-4. Approve Render demo deploy; paste live URL into Links.
-5. Review `docs/demo-v6.mp4` (upload for the form if required).
-6. Hit Submit on lablab by **18 Oct 2026 18:00 MSK**.
+- [x] Discord connected on lablab.ai, team created for AMD ACT III
+- [x] Public repo https://github.com/heavycastles/leadflow-amd (MIT, CI green, 30 tests)
+- [x] Demo video on YouTube: https://youtu.be/KZSxeaZ0K50 (channel "Builds Lab")
+- [x] AMD Token Factory key received; live mode verified with `DeepSeek-V4-Flash` (0 fallbacks) — `docs/live-proof.md`
+- [x] Slides `docs/slides.pdf` and cover `docs/cover.png` ready
+- [ ] Sign in to lablab (AMD SSO), fill the form with the fields above, owner reviews
+- [ ] Press Submit by **18 Oct 2026 18:00 MSK** (aim for 14:00)
+- [ ] Optional: Render live demo URL
 
 Hackathon page: https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-iii
 
-**Do not push, submit, or invent live URLs / API keys / live benchmark numbers from this pack alone.**
+**Never paste API keys into the form or the repo.**

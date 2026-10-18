@@ -35,7 +35,7 @@ Web dashboard (/)  · /leads · /orders · /metrics (latency, tok/s, backend, fa
 Dashboard views (single static page, no build step, no external JS): **Inbox** (messenger view with RU/UZ/EN
 flags, AI draft reply, explainable score and order draft), **Leads** (ranked table), **Orders**, **Analytics**
 (inline-SVG charts computed from live `/leads`), **AMD · Model** (backend badge from `/version`; GPU benchmark
-numbers stay *pending* until measured). Deep link: `/#inbox?lead=1`. More screenshots in [`docs/ui-v2/`](docs/ui-v2).
+numbers stay *pending* until measured; the Token Factory row shows a real run). Deep link: `/#inbox?lead=1`. More screenshots in [`docs/ui-v2/`](docs/ui-v2).
 
 Design choices:
 - **One key to go live on AMD**: set `AMD_TOKEN_FACTORY_API_KEY` (alias `RADEON_API_KEY`) and the app calls the
@@ -55,12 +55,16 @@ Design choices:
 | What runs on AMD | every lead analysis: intent classification, entity extraction, multilingual reply drafting |
 | Measured | `scripts/benchmark.py` — latency, aggregate tok/s under concurrency, JSON validity, intent accuracy |
 
+**Live status (2026-10-18):** verified end-to-end against AMD Token Factory (`DeepSeek-V4-Flash`) — RU/UZ/EN leads analyzed with 0 fallbacks.
+Raw run + dashboard screenshots: [`docs/live-proof.md`](docs/live-proof.md).
+
 Token Factory alone is enough to run and submit (`python -m app.llm` prints live latency for one sample;
 `python -m scripts.benchmark` works against it too). Self-hosted MI300X numbers are an optional extra —
 filled in only if Developer Cloud credits are used:
 
 | model | concurrency | req/s | aggregate tok/s | avg latency | intent accuracy |
 |---|---|---|---|---|---|
+| **DeepSeek-V4-Flash (AMD Token Factory, live, 2026-10-18)** | 2 | 0.22 | 29.4 | 8.5 s | 0.875 (8 req, 0 fallbacks) |
 | Qwen2.5-7B-Instruct (MI300X, optional) | 8 | TBD | TBD | TBD | TBD |
 
 Local **mock** backend sanity run (not GPU): see [`docs/benchmarks-mock.md`](docs/benchmarks-mock.md) — intent accuracy only; latency/tok/s are not meaningful without a real AMD endpoint.

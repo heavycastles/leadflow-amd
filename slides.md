@@ -17,7 +17,7 @@ footer: LeadFlow AI · AMD Developer Hackathon ACT III · MIT
 # LeadFlow AI
 ## Multilingual commerce lead & order agent on AMD GPUs (Token Factory · MI300X-ready)
 
-**heavycastles** · Track: Reinvent Commerce  
+**heavycastles** · `github.com/heavycastles` · Track: Reinvent Commerce  
 lablab.ai AMD Developer Hackathon: ACT III
 
 ---
@@ -126,10 +126,10 @@ Graceful degradation: offline analyzer if the GPU endpoint fails.
 
 # Team & links
 
-**heavycastles**
+**heavycastles** · `github.com/heavycastles`
 
 - GitHub: `github.com/heavycastles/leadflow-amd`
-- Demo URL: *(TODO)*
+- Demo video: `youtu.be/KZSxeaZ0K50`
 - Video · slides PDF · cover: see `docs/`
 
 MIT licensed · Built for AMD Developer Hackathon ACT III

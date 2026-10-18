@@ -1,0 +1,18 @@
+{
+  "llm": {
+    "backend": "openai",
+    "provider": "amd-token-factory",
+    "base_url": "https://developer.amd.com.cn/radeon/api/v1",
+    "model": "DeepSeek-V4-Flash",
+    "hardware": "AMD Radeon Cloud GPUs (AMD Token Factory API)",
+    "fallback": true
+  },
+  "requests": 8,
+  "concurrency": 2,
+  "wall_s": 36.04,
+  "req_per_s": 0.22,
+  "aggregate_tokens_per_s": 29.4,
+  "avg_latency_ms": 8482.3,
+  "fallbacks": 0,
+  "intent_accuracy": 0.875
+}
