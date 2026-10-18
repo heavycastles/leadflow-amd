@@ -15,7 +15,7 @@ footer: LeadFlow AI · AMD Developer Hackathon ACT III · MIT
 
 <!-- _class: lead -->
 # LeadFlow AI
-## Multilingual commerce lead & order agent on AMD GPUs (Token Factory · MI300X-ready)
+## Multilingual commerce lead & order agent — Google Gemma on AMD GPUs (Token Factory · MI300X-ready)
 
 **heavycastles** · `github.com/heavycastles` · Track: Reinvent Commerce  
 lablab.ai AMD Developer Hackathon: ACT III
@@ -85,7 +85,7 @@ Graceful degradation: offline analyzer if the GPU endpoint fails.
 
 | Layer | Choice |
 |---|---|
-| Live API | **AMD Token Factory** (AMD GPUs, OpenAI-compatible, one key) — DeepSeek-V4-Flash |
+| Live API | **AMD Token Factory** (AMD GPUs, OpenAI-compatible, one key) — **Google Gemma `Gemma-4-31B-IT`** (default), DeepSeek-V4-Flash (alt.) |
 | Self-hosted | AMD Instinct **MI300X** (192 GB HBM3) · **ROCm** + `rocm/vllm` · Qwen2.5-7B (70B-class fits) |
 | Workload | intent · entities · multilingual reply drafting |
 

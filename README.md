@@ -1,8 +1,8 @@
 # LeadFlow AI — commerce lead & order agent on AMD
 
 Small shops in Central Asia get dozens of messages a day in Russian, Uzbek and English from Telegram, WhatsApp
-and the web. LeadFlow AI reads every message with an open LLM served on **AMD GPUs — the AMD Token Factory API**
-(one key, OpenAI-compatible) or, optionally, **vLLM on an AMD Instinct MI300X (ROCm)** for self-hosted benchmarks —
+and the web. LeadFlow AI reads every message with **Google Gemma (`Gemma-4-31B-IT`) served on AMD GPUs via the AMD Token Factory API**
+(one key, OpenAI-compatible; `DeepSeek-V4-Flash` is a documented alternative) or, optionally, **vLLM on an AMD Instinct MI300X (ROCm)** for self-hosted benchmarks —
 extracts intent / products / quantities / budget / urgency, drafts a reply in the customer's language, creates an
 order draft, and ranks leads with an **explainable hybrid score** (deterministic rules + model features).
 An n8n workflow wires it to a Telegram shop bot.
@@ -39,7 +39,8 @@ numbers stay *pending* until measured; the Token Factory row shows a real run). 
 
 Design choices:
 - **One key to go live on AMD**: set `AMD_TOKEN_FACTORY_API_KEY` (alias `RADEON_API_KEY`) and the app calls the
-  AMD Token Factory API at `https://developer.amd.com.cn/radeon/api/v1` with `DeepSeek-V4-Flash` by default.
+  AMD Token Factory API at `https://developer.amd.com.cn/radeon/api/v1` with **Google Gemma `Gemma-4-31B-IT`** by default
+  (alternative: `AMD_TOKEN_FACTORY_MODEL=DeepSeek-V4-Flash`, ~2× faster).
 - **LLM is pluggable via env** (`LLM_BACKEND`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY` — explicit values always
   win). Any OpenAI-compatible server works, e.g. vLLM on AMD Developer Cloud MI300X for real GPU benchmarks.
 - **No LLM-only decisions**: model output is validated and clamped, and the score always shows *why*.
@@ -50,12 +51,13 @@ Design choices:
 
 | Layer | AMD technology |
 |---|---|
-| Primary inference | **AMD Token Factory** public model API (AMD GPUs, OpenAI-compatible) — `DeepSeek-V4-Flash` default, any id from `/models` |
+| Primary inference | **AMD Token Factory** public model API (AMD GPUs, OpenAI-compatible) — **Google Gemma `Gemma-4-31B-IT`** default (alt. `DeepSeek-V4-Flash`), any id from `/models` |
 | Optional self-hosted | AMD Instinct **MI300X** (192 GB HBM3) on **AMD Developer Cloud**, **ROCm** + `rocm/vllm`, `Qwen/Qwen2.5-7B-Instruct` |
 | What runs on AMD | every lead analysis: intent classification, entity extraction, multilingual reply drafting |
 | Measured | `scripts/benchmark.py` — latency, aggregate tok/s under concurrency, JSON validity, intent accuracy |
 
-**Live status (2026-10-18):** verified end-to-end against AMD Token Factory (`DeepSeek-V4-Flash`) — RU/UZ/EN leads analyzed with 0 fallbacks.
+**Live status (2026-10-18):** verified end-to-end against AMD Token Factory with **Google Gemma `Gemma-4-31B-IT`** (default) — 5/5 RU/UZ/EN leads, valid JSON, 0 fallbacks, avg 19.4 s —
+and earlier with `DeepSeek-V4-Flash` (alternative, 0 fallbacks).
 Raw run + dashboard screenshots: [`docs/live-proof.md`](docs/live-proof.md).
 
 Token Factory alone is enough to run and submit (`python -m app.llm` prints live latency for one sample;
@@ -64,7 +66,8 @@ filled in only if Developer Cloud credits are used:
 
 | model | concurrency | req/s | aggregate tok/s | avg latency | intent accuracy |
 |---|---|---|---|---|---|
-| **DeepSeek-V4-Flash (AMD Token Factory, live, 2026-10-18)** | 2 | 0.22 | 29.4 | 8.5 s | 0.875 (8 req, 0 fallbacks) |
+| **Gemma-4-31B-IT (Google Gemma, AMD Token Factory, live, 2026-10-18, default)** | 1 | 0.05 | 7.0 | 19.4 s | 5/5 (demo leads, 0 fallbacks) |
+| **DeepSeek-V4-Flash (AMD Token Factory, live, 2026-10-18, alternative)** | 2 | 0.22 | 29.4 | 8.5 s | 0.875 (8 req, 0 fallbacks) |
 | Qwen2.5-7B-Instruct (MI300X, optional) | 8 | TBD | TBD | TBD | TBD |
 
 Local **mock** backend sanity run (not GPU): see [`docs/benchmarks-mock.md`](docs/benchmarks-mock.md) — intent accuracy only; latency/tok/s are not meaningful without a real AMD endpoint.
@@ -87,7 +90,7 @@ Per lablab ACT III FAQ (2026-10-15): the event is hosted on [notebooks.amd.com/t
 |---|---|
 | Base URL | `https://developer.amd.com.cn/radeon/api/v1` (OpenAI-compatible `/chat/completions`, `/models`) |
 | Auth | `Authorization: Bearer <key>` — env `AMD_TOKEN_FACTORY_API_KEY` (or `RADEON_API_KEY`, as in the AMD docs) |
-| Default model | `DeepSeek-V4-Flash` — override with `AMD_TOKEN_FACTORY_MODEL` (or `LLM_MODEL`), e.g. `DeepSeek-V4.1-Flash`, `GLM-5.3-Flash`, `Qwen3.8-27B` |
+| Default model | `Gemma-4-31B-IT` (Google Gemma on AMD GPUs; `LLM_TIMEOUT=90`) — override with `AMD_TOKEN_FACTORY_MODEL` (or `LLM_MODEL`), e.g. `DeepSeek-V4-Flash` (faster), `GLM-5.3-Flash`, `Qwen3.8-27B` |
 
 ```bash
 ./scripts/go_live.sh rc-YOUR_KEY   # writes .env, runs python -m app.llm (never prints the key)

@@ -90,7 +90,7 @@ def _settings() -> dict:
         "base_url": base_url.rstrip("/"),
         "model": model,
         "api_key": _env("LLM_API_KEY") or tf_key or "EMPTY",
-        "timeout": float(_env("LLM_TIMEOUT", "30")),
+        "timeout": float(_env("LLM_TIMEOUT", "90")),  # Gemma on a shared endpoint can spike
         "fallback": _env("LLM_FALLBACK", "1").lower() not in {"0", "false", "no"},
         # Some Token Factory models ignore/refuse response_format; LLM_JSON_MODE=0 drops it
         # (extract_json() still tolerates chatter around the JSON object).

@@ -16,7 +16,7 @@ LeadFlow AI — multilingual commerce lead & order agent on AMD GPUs
 ## Short description (≤255 chars)
 ```
 An AI sales agent for small shops: reads Telegram/WhatsApp/web messages in RU/UZ/EN, extracts orders, drafts replies
-and ranks leads with an explainable score — powered by open LLMs on AMD GPUs via AMD Token Factory.
+and ranks leads with an explainable score — powered by Google Gemma (Gemma-4-31B-IT) served on AMD GPUs via AMD Token Factory.
 ```
 
 ## Long description
@@ -24,8 +24,8 @@ and ranks leads with an explainable score — powered by open LLMs on AMD GPUs v
 Small online shops in Central Asia sell through chat. Owners drown in mixed-language messages and lose hot buyers
 while answering price questions. LeadFlow AI is an agent that sits between the shop's channels and its owner.
 
-Every incoming message goes through an open LLM served on AMD GPUs through the AMD Token Factory API
-(OpenAI-compatible, DeepSeek-V4-Flash by default — one API key switches the app live). The same client also runs
+Every incoming message goes through Google Gemma (Gemma-4-31B-IT) served on AMD GPUs through the AMD Token Factory API
+(OpenAI-compatible, Gemma by default, DeepSeek-V4-Flash as a drop-in alternative — one API key switches the app live). The same client also runs
 against a self-hosted vLLM on an AMD Instinct MI300X with ROCm (Qwen2.5-7B-Instruct) for dedicated deployments. The agent classifies intent (order, quote, question, complaint, spam),
 extracts products, quantities, budget and urgency, writes a reply in the customer's own language, and when the
 customer wants to buy, creates an order draft automatically.
@@ -48,7 +48,7 @@ Reinvent Commerce
 
 ## Tech tags
 ```
-AMD Token Factory, AMD Instinct MI300X, AMD Developer Cloud, ROCm, vLLM, DeepSeek, Qwen2.5, FastAPI, Python, n8n, Telegram, AI Agents, LLM, E-commerce
+AMD Token Factory, Google Gemma, Gemma 4, AMD Instinct MI300X, AMD Developer Cloud, ROCm, vLLM, DeepSeek, Qwen2.5, FastAPI, Python, n8n, Telegram, AI Agents, LLM, E-commerce
 ```
 
 ## Links
@@ -80,6 +80,7 @@ AMD Token Factory, AMD Instinct MI300X, AMD Developer Cloud, ROCm, vLLM, DeepSee
 - [x] Public repo https://github.com/heavycastles/leadflow-amd (MIT, CI green, 30 tests)
 - [x] Demo video on YouTube: https://youtu.be/KZSxeaZ0K50 (channel "Builds Lab")
 - [x] AMD Token Factory key received; live mode verified with `DeepSeek-V4-Flash` (0 fallbacks) — `docs/live-proof.md`
+- [x] 2026-10-18: default switched to **Google Gemma `Gemma-4-31B-IT` on AMD GPUs** (Google prize: Gemma on AMD); 5/5 demo leads live, 0 fallbacks
 - [x] Slides `docs/slides.pdf` and cover `docs/cover.png` ready
 - [ ] Sign in to lablab (AMD SSO), fill the form with the fields above, owner reviews
 - [ ] Press Submit by **18 Oct 2026 18:00 MSK** (aim for 14:00)
