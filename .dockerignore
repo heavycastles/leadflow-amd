@@ -17,7 +17,6 @@ docs/draft-frames/
 docs/demo-*.mp4
 
 # Dev / local-only
-.cursor
 *.md
 !README.md
 n8n/

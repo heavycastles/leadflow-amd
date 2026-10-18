@@ -80,7 +80,7 @@ def test_token_factory_key_selects_openai(clean_env, var):
     cfg = _settings()
     assert cfg["backend"] == "openai" and cfg["provider"] == "amd-token-factory"
     assert cfg["base_url"] == TOKEN_FACTORY_BASE_URL == "https://developer.amd.com.cn/radeon/api/v1"
-    assert cfg["model"] == DEFAULT_TOKEN_FACTORY_MODEL == "DeepSeek-V4-Flash"
+    assert cfg["model"] == DEFAULT_TOKEN_FACTORY_MODEL == "Gemma-4-31B-IT"
     assert cfg["api_key"] == "rc-test" and "Token Factory" in cfg["hardware"]
 
 
@@ -141,7 +141,7 @@ def test_check_lists_models_and_runs_sample(clean_env):
 
     def handler(request):
         if request.url.path.endswith("/models"):
-            return httpx.Response(200, json={"data": [{"id": "DeepSeek-V4-Flash"}, {"id": "GLM-5.3-Flash"}]})
+            return httpx.Response(200, json={"data": [{"id": "Gemma-4-31B-IT"}, {"id": "DeepSeek-V4-Flash"}]})
         return _fake_vllm(request)
 
     out = check(transport=httpx.MockTransport(handler))
@@ -169,7 +169,7 @@ def test_env_example_plus_one_key_goes_live(clean_env, tmp_path):
         cfg = _settings()
     assert cfg["backend"] == "openai" and cfg["provider"] == "amd-token-factory"
     assert cfg["base_url"] == TOKEN_FACTORY_BASE_URL and cfg["api_key"] == "rc-from-file"
-    assert cfg["model"] == "DeepSeek-V4-Flash"
+    assert cfg["model"] == "Gemma-4-31B-IT"
     assert "AMD_TOKEN_FACTORY_API_KEY" not in os.environ
 
 

@@ -56,7 +56,7 @@ class LLMResult:
 
 
 TOKEN_FACTORY_BASE_URL = "https://developer.amd.com.cn/radeon/api/v1"  # noqa: S105 - not a secret
-DEFAULT_TOKEN_FACTORY_MODEL = "DeepSeek-V4-Flash"  # noqa: S105 - not a secret; any id from GET {base}/models
+DEFAULT_TOKEN_FACTORY_MODEL = "Gemma-4-31B-IT"  # noqa: S105 - Google Gemma on AMD GPUs; alt: "DeepSeek-V4-Flash"
 TOKEN_FACTORY_HARDWARE = "AMD Radeon Cloud GPUs (AMD Token Factory API)"  # noqa: S105 - not a secret
 VLLM_BASE_URL = "http://localhost:8000/v1"
 VLLM_MODEL = "Qwen/Qwen2.5-7B-Instruct"
